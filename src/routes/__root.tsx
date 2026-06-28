@@ -20,7 +20,9 @@ function NotFoundComponent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-primary">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found / الصفحة غير موجودة</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">
+          Page not found / الصفحة غير موجودة
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
           The page you're looking for doesn't exist.
         </p>
@@ -83,13 +85,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "ELBAKRI Hotel Rates — نظام أسعار الفنادق" },
       { name: "description", content: "نظام إدارة أسعار الفنادق لشركة الباكري للسفر والسياحة" },
       { property: "og:title", content: "ELBAKRI Hotel Rates — نظام أسعار الفنادق" },
-      { property: "og:description", content: "نظام إدارة أسعار الفنادق لشركة الباكري للسفر والسياحة" },
+      {
+        property: "og:description",
+        content: "نظام إدارة أسعار الفنادق لشركة الباكري للسفر والسياحة",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "ELBAKRI Hotel Rates — نظام أسعار الفنادق" },
-      { name: "twitter:description", content: "نظام إدارة أسعار الفنادق لشركة الباكري للسفر والسياحة" },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/62576fd4-e502-495f-8af3-7ba8225ac178/id-preview-6460801c--f7ae7a15-112e-414f-b48a-6d9a045ba27f.lovable.app-1782607012399.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/62576fd4-e502-495f-8af3-7ba8225ac178/id-preview-6460801c--f7ae7a15-112e-414f-b48a-6d9a045ba27f.lovable.app-1782607012399.png" },
+      {
+        name: "twitter:description",
+        content: "نظام إدارة أسعار الفنادق لشركة الباكري للسفر والسياحة",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/62576fd4-e502-495f-8af3-7ba8225ac178/id-preview-6460801c--f7ae7a15-112e-414f-b48a-6d9a045ba27f.lovable.app-1782607012399.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/62576fd4-e502-495f-8af3-7ba8225ac178/id-preview-6460801c--f7ae7a15-112e-414f-b48a-6d9a045ba27f.lovable.app-1782607012399.png",
+      },
     ],
     links: [
       {
@@ -117,10 +133,41 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans">
+        <PublicRuntimeConfigScript />
         {children}
         <Scripts />
       </body>
     </html>
+  );
+}
+
+function getRuntimePublicEnv() {
+  const env =
+    typeof process !== "undefined" && process.env
+      ? process.env
+      : ({} as Record<string, string | undefined>);
+
+  return {
+    SUPABASE_URL: env.SUPABASE_URL || env.VITE_SUPABASE_URL || "",
+    SUPABASE_PUBLISHABLE_KEY:
+      env.SUPABASE_PUBLISHABLE_KEY ||
+      env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      env.SUPABASE_ANON_KEY ||
+      env.VITE_SUPABASE_ANON_KEY ||
+      "",
+  };
+}
+
+function PublicRuntimeConfigScript() {
+  const payload = JSON.stringify(getRuntimePublicEnv()).replace(/</g, "\\u003c");
+
+  return (
+    <script
+      suppressHydrationWarning
+      dangerouslySetInnerHTML={{
+        __html: `window.__ELBAKRI_PUBLIC_ENV__=${payload};`,
+      }}
+    />
   );
 }
 
