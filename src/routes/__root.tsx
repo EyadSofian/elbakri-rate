@@ -11,9 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
-import { I18nProvider } from "@/hooks/useI18n";
 
 function NotFoundComponent() {
   return (
@@ -176,12 +174,8 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <Outlet />
-          <Toaster richColors position="top-center" />
-        </AuthProvider>
-      </I18nProvider>
+      <Outlet />
+      <Toaster richColors position="top-center" />
     </QueryClientProvider>
   );
 }

@@ -1,29 +1,7 @@
-import { createFileRoute, Outlet, useRouter } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { AppShell } from "@/components/AppShell";
+import { createFileRoute } from "@tanstack/react-router";
+
+import { CleanRateHub } from "@/components/CleanRateHub";
 
 export const Route = createFileRoute("/_authenticated")({
-  component: AuthenticatedLayout,
+  component: CleanRateHub,
 });
-
-function AuthenticatedLayout() {
-  const { session, loading } = useAuth();
-  const router = useRouter();
-  useEffect(() => {
-    if (!loading && !session) router.navigate({ to: "/auth" });
-  }, [loading, session, router]);
-
-  if (loading || !session) {
-    return (
-      <div className="min-h-screen grid place-items-center text-muted-foreground">
-        جاري التحقق…
-      </div>
-    );
-  }
-  return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
-  );
-}
