@@ -18,10 +18,10 @@ export default function PackageAddRatesPage() {
       <Link to={`/packages/${id}`} className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-navy-600 hover:text-navy-800">
         <ArrowRight className="h-4 w-4" />{pkg?.package_name ?? 'الباقة'}
       </Link>
-      <PageHeader title="إضافة أسعار للباقة" subtitle={pkg?.package_name} />
+      <PageHeader title="إضافة أسعار لفنادق الباقة" subtitle={pkg?.package_name} />
       <MatrixBuilder
-        fixedPackageId={Number(id)}
         presetHotelIds={pkg?.hotels?.map((h) => h.id) ?? []}
+        independentOnly
         onDone={() => navigate(`/packages/${id}`)}
       />
     </div>

@@ -4,7 +4,6 @@ import { Package as PackageIcon, Search } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/inputs'
-import { PeriodsEditor, countRecords, newPeriod, periodsToApi, type Period } from '@/components/PeriodsEditor'
 import { useToast } from '@/components/ui/toast'
 import { useHotels, useHotelGroups, useLists } from '@/lib/hooks'
 import { REGIONS, mealPlanLabel, pricingBasisLabel } from '@/lib/labels'
@@ -32,11 +31,8 @@ export function PackageForm({ open, onClose, pkg }: { open: boolean; onClose: ()
   })
   const [selected, setSelected] = useState<number[]>(pkg?.hotels?.map((h) => h.id) ?? [])
   const [hq, setHq] = useState('')
-  const [withPricing, setWithPricing] = useState(false)
-  const [periods, setPeriods] = useState<Period[]>([newPeriod()])
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }))
   const toggle = (hid: number) => setSelected((s) => (s.includes(hid) ? s.filter((x) => x !== hid) : [...s, hid]))
-  const pricingPeriods = () => periodsToApi(periods).map((p) => ({ ...p, category: f.package_type || 'Package' }))
 
   const save = useMutation({
     mutationFn: async () => {
@@ -47,41 +43,24 @@ export function PackageForm({ open, onClose, pkg }: { open: boolean; onClose: ()
         default_pricing_basis: f.default_pricing_basis || null,
         hotel_ids: selected,
       }
-      const saved = editing
+      return editing
         ? await api.put<Package>(`/packages/${pkg!.id}`, payload)
         : await api.post<Package>('/packages', payload)
-
-      let ratesCreated = 0
-      if (withPricing && countRecords(periods) > 0) {
-        const res = await api.post<{ rates_created: number }>('/rates/matrix', {
-          package_id: saved.id,
-          hotel_ids: selected,
-          periods: pricingPeriods(),
-        })
-        ratesCreated = res.rates_created
-      }
-
-      return { saved, ratesCreated }
     },
-    onSuccess: ({ saved, ratesCreated }) => {
+    onSuccess: (saved) => {
       qc.invalidateQueries({ queryKey: ['packages'] })
       qc.invalidateQueries({ queryKey: ['package', String(saved.id)] })
       qc.invalidateQueries({ queryKey: ['rates'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
-      toast.success(ratesCreated > 0 ? `تم الحفظ وإضافة ${ratesCreated} سعر` : 'تم الحفظ')
-      setWithPricing(false)
-      setPeriods([newPeriod()])
+      toast.success('تم الحفظ')
       onClose()
     },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : 'تعذّر الحفظ'),
   })
 
   const filteredHotels = (hotels ?? []).filter((h) => !hq || h.hotel_name.toLowerCase().includes(hq.toLowerCase()))
-  const expectedRates = selected.length * countRecords(periods)
   const submit = () => {
     if (!f.package_name.trim()) return toast.error('اسم الباقة مطلوب')
-    if (withPricing && selected.length === 0) return toast.error('اختار فندق واحد على الأقل لإضافة أسعار للباقة')
-    if (withPricing && countRecords(periods) === 0) return toast.error('أدخل سعرًا واحدًا على الأقل داخل الفترات')
     save.mutate()
   }
 
@@ -154,25 +133,8 @@ export function PackageForm({ open, onClose, pkg }: { open: boolean; onClose: ()
           </div>
         </div>
 
-        <div className="rounded-card border border-navy-100 bg-white p-3 sm:col-span-2">
-          <label className="flex cursor-pointer items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-bold text-navy-900">إضافة أسعار للباقة الآن</div>
-              <div className="text-xs text-ink-muted">
-                الأسعار ستتسجل على الفنادق المختارة داخل هذه الباقة، مع إمكانية إضافة أكثر من فترة لكل غرفة.
-              </div>
-            </div>
-            <input type="checkbox" checked={withPricing} onChange={(e) => setWithPricing(e.target.checked)} className="mt-1 h-5 w-5 accent-navy-700" />
-          </label>
-
-          {withPricing && (
-            <div className="mt-3 border-t border-navy-100 pt-3">
-              <PeriodsEditor value={periods} onChange={setPeriods} lists={lists} />
-              <p className="mt-2 text-center text-xs font-semibold text-navy-600">
-                المتوقع إنشاء <span className="nums">{expectedRates}</span> سعر داخل الباقة
-              </p>
-            </div>
-          )}
+        <div className="rounded-card border border-navy-100 bg-navy-50 p-3 text-xs leading-relaxed text-ink-muted sm:col-span-2">
+          الباقة هنا تجمع فنادق فقط. أي سعر أو فترة تضيفها داخل الفندق ستظهر تلقائيًا داخل كل باقة مرتبطة بهذا الفندق.
         </div>
       </div>
     </Modal>

@@ -83,7 +83,7 @@ export default function SalesPage() {
         onChange={setTab}
         tabs={[
           { key: 'hotels', label: 'عروض الفنادق', count: hotelOffers.length },
-          { key: 'packages', label: 'عروض الباكدجات', count: packageOffers.length },
+          { key: 'packages', label: 'عروض الباكدجات', count: readyPackages.length },
         ]}
       />
 

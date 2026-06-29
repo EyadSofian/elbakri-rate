@@ -8,10 +8,11 @@ import { SectionTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge, Stars } from '@/components/ui/badge'
 import { Modal, ConfirmDialog } from '@/components/ui/modal'
-import { RateRow } from '@/components/RateRow'
+import { RatePeriodCard } from '@/components/RatePeriodCard'
 import { HotelForm } from '@/components/HotelForm'
 import { RateForm } from '@/components/RateForm'
 import { PeriodsEditor, newPeriod, periodsToApi, countRecords, type Period } from '@/components/PeriodsEditor'
+import { groupRatesByPeriod } from '@/lib/rateGrouping'
 import { useLists } from '@/lib/hooks'
 import { useToast } from '@/components/ui/toast'
 import type { Hotel, Rate } from '@/types'
@@ -114,9 +115,14 @@ export default function HotelDetailPage() {
       ) : list.length === 0 ? (
         <EmptyState icon={<Tag className="h-7 w-7" />} title="لا توجد أسعار" description="أضف سعرًا أو فترات أسعار" action={<Button onClick={() => setAddRate(true)}><Plus className="h-4 w-4" />إضافة سعر</Button>} />
       ) : (
-        <div className="space-y-2">
-          {list.map((r) => (
-            <RateRow key={r.id} rate={r} onEdit={() => setEditRate(r)} onDelete={() => setDelRate(r)} />
+        <div className="space-y-3">
+          {groupRatesByPeriod(list).map((group) => (
+            <RatePeriodCard
+              key={group.key}
+              rates={group.rates}
+              onEditRate={setEditRate}
+              onDeleteRate={setDelRate}
+            />
           ))}
         </div>
       )}

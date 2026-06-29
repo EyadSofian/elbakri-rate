@@ -9,7 +9,7 @@ import { PeriodsEditor, newPeriod, periodsToApi, countRecords, type Period } fro
 import { useHotelGroups, useLists } from '@/lib/hooks'
 import { REGIONS } from '@/lib/labels'
 import { api, ApiError } from '@/lib/api'
-import type { Hotel } from '@/types'
+import type { Hotel, HotelGroup } from '@/types'
 
 export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: () => void; hotel?: Hotel }) {
   const editing = !!hotel
@@ -30,6 +30,7 @@ export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: ()
     transfer_notes_default: hotel?.transfer_notes_default ?? '',
     status: hotel?.status ?? 'Active',
   })
+  const [newGroupName, setNewGroupName] = useState('')
   const [withPricing, setWithPricing] = useState(false)
   const [periods, setPeriods] = useState<Period[]>([newPeriod()])
 
@@ -37,9 +38,17 @@ export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: ()
 
   const save = useMutation({
     mutationFn: async () => {
+      let hotelGroupId = form.hotel_group_id ? Number(form.hotel_group_id) : null
+      if (newGroupName.trim()) {
+        const group = await api.post<HotelGroup>('/hotel-groups', {
+          name: newGroupName.trim(),
+          region: form.region || null,
+        })
+        hotelGroupId = group.id
+      }
       const payload: Record<string, unknown> = {
         ...form,
-        hotel_group_id: form.hotel_group_id ? Number(form.hotel_group_id) : null,
+        hotel_group_id: hotelGroupId,
         star_rating: form.star_rating ? Number(form.star_rating) : null,
       }
       if (editing) {
@@ -57,6 +66,7 @@ export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: ()
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['hotels'] })
+      qc.invalidateQueries({ queryKey: ['hotel-groups'] })
       qc.invalidateQueries({ queryKey: ['hotel', String(hotel?.id)] })
       qc.invalidateQueries({ queryKey: ['rates'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
@@ -66,6 +76,7 @@ export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: ()
           (createdRates > 0 ? ` وإضافة ${createdRates} سعر` : ''),
       )
       setWithPricing(false)
+      setNewGroupName('')
       setPeriods([newPeriod()])
       onClose()
     },
@@ -105,6 +116,16 @@ export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: ()
               <option value="">— بدون مجموعة —</option>
               {groups?.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </Select>
+          </Field>
+          <Field label="أو مجموعة جديدة">
+            <Input
+              value={newGroupName}
+              onChange={(e) => {
+                setNewGroupName(e.target.value)
+                if (e.target.value.trim()) set('hotel_group_id', '')
+              }}
+              placeholder="مثال: مجموعة الباتروس"
+            />
           </Field>
           <Field label="المنطقة">
             <Select value={form.region} onChange={(e) => set('region', e.target.value)}>

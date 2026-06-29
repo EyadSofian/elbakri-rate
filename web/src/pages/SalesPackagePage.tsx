@@ -1,16 +1,15 @@
 import { useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Building2, Eye, EyeOff, CheckSquare } from 'lucide-react'
+import { ArrowRight, Building2, CheckSquare, Eye, EyeOff } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageLoader, ErrorState, EmptyState } from '@/components/ui/misc'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/inputs'
 import { ExportActions } from '@/components/export/ExportActions'
-import { formatPrice, formatDateRange, cn } from '@/lib/utils'
-import { mealLabel, roomLabel } from '@/lib/labels'
-import type { Package, Rate } from '@/types'
+import { RatePeriodCard } from '@/components/RatePeriodCard'
+import { groupRatesByHotel, groupRatesByPeriod } from '@/lib/rateGrouping'
+import type { Package } from '@/types'
 
 export default function SalesPackagePage() {
   const { id } = useParams()
@@ -20,21 +19,22 @@ export default function SalesPackagePage() {
   const [client, setClient] = useState('')
 
   const readyRates = useMemo(() => (pkg?.rates ?? []).filter((r) => r.status === 'Ready'), [pkg])
-  const groups = useMemo(() => {
-    const map = new Map<string, Rate[]>()
-    for (const r of readyRates) {
-      const k = r.hotel_name ?? 'فندق'
-      if (!map.has(k)) map.set(k, [])
-      map.get(k)!.push(r)
-    }
-    return Array.from(map.entries())
-  }, [readyRates])
+  const groups = useMemo(() => groupRatesByHotel(readyRates), [readyRates])
 
   if (isLoading) return <PageLoader />
   if (error || !pkg) return <ErrorState message={(error as Error)?.message ?? 'غير موجود'} />
 
   const chosen = readyRates.filter((r) => selected.size === 0 || selected.has(r.id))
-  const toggle = (rid: number) => setSelected((s) => { const n = new Set(s); n.has(rid) ? n.delete(rid) : n.add(rid); return n })
+  const toggle = (rid: number) => setSelected((s) => {
+    const next = new Set(s)
+    next.has(rid) ? next.delete(rid) : next.add(rid)
+    return next
+  })
+  const toggleMany = (ids: number[], checked: boolean) => setSelected((s) => {
+    const next = new Set(s)
+    ids.forEach((rid) => (checked ? next.add(rid) : next.delete(rid)))
+    return next
+  })
 
   return (
     <div>
@@ -42,7 +42,6 @@ export default function SalesPackagePage() {
         <ArrowRight className="h-4 w-4" />عروض المبيعات
       </Link>
 
-      {/* Branded package banner */}
       <div className="mb-5 overflow-hidden rounded-card bg-navy-900 p-6 text-white shadow-soft">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -51,14 +50,13 @@ export default function SalesPackagePage() {
             {pkg.region && <p className="mt-1 text-navy-200">{pkg.region}</p>}
           </div>
           <div className="text-left text-sm text-navy-200">
-            <div className="nums text-3xl font-extrabold text-gold">{readyRates.length}</div>
-            عرض جاهز
+            <div className="nums text-3xl font-extrabold text-gold">{groups.length}</div>
+            فندق جاهز
           </div>
         </div>
         {pkg.description && <p className="mt-3 max-w-2xl text-navy-100">{pkg.description}</p>}
       </div>
 
-      {/* Toolbar */}
       <div className="mb-4 flex flex-col gap-3 rounded-card border border-navy-100 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <input
@@ -87,29 +85,25 @@ export default function SalesPackagePage() {
       ) : (
         <div className="space-y-5 pb-10">
           <p className="text-xs text-ink-muted">
-            {selected.size === 0 ? 'سيتم تصدير كل الأسعار. حدد أسعارًا معينة لتخصيص العرض.' : `محدد ${selected.size} سعر للتصدير.`}
+            {selected.size === 0 ? 'سيتم تصدير كل الأسعار. حدد فترات أو غرف معينة لتخصيص العرض.' : `محدد ${selected.size} سعر للتصدير.`}
           </p>
           {groups.map(([hotel, rates]) => (
             <div key={hotel}>
               <h3 className="mb-2 flex items-center gap-2 text-base font-bold text-navy-800">
                 <Building2 className="h-4 w-4 text-navy-500" />{hotel}
               </h3>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {rates.map((r) => {
-                  const active = selected.has(r.id)
-                  return (
-                    <div key={r.id} className={cn('flex items-center justify-between gap-3 rounded-card border bg-white p-3', active ? 'border-gold ring-1 ring-gold/40' : 'border-navy-100')}>
-                      {!preview && (
-                        <Checkbox checked={active} onChange={() => toggle(r.id)} />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-navy-900">{roomLabel(r.room_type)} · {mealLabel(r.meal_plan)}</div>
-                        <div className="nums text-xs text-ink-muted">{formatDateRange(r.date_from, r.date_to)}</div>
-                      </div>
-                      <div className="nums text-lg font-extrabold text-navy-900">{formatPrice(r.adult_price, r.currency)}</div>
-                    </div>
-                  )
-                })}
+              <div className="space-y-3">
+                {groupRatesByPeriod(rates).map((period) => (
+                  <RatePeriodCard
+                    key={`${hotel}-${period.key}`}
+                    rates={period.rates}
+                    selectable={!preview}
+                    selectedIds={selected}
+                    onToggleRate={(rid) => toggle(rid)}
+                    onToggleGroup={toggleMany}
+                    compact={preview}
+                  />
+                ))}
               </div>
             </div>
           ))}

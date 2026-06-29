@@ -9,12 +9,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { Checkbox, Input } from '@/components/ui/inputs'
-import { RateRow } from '@/components/RateRow'
+import { RatePeriodCard } from '@/components/RatePeriodCard'
 import { PackageForm } from '@/components/PackageForm'
 import { ExportActions } from '@/components/export/ExportActions'
 import { useHotels } from '@/lib/hooks'
 import { useToast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
+import { groupRatesByHotel, groupRatesByPeriod } from '@/lib/rateGrouping'
 import type { Package, Rate } from '@/types'
 
 export default function PackageDetailPage() {
@@ -31,13 +32,7 @@ export default function PackageDetailPage() {
   const [clientName, setClientName] = useState('')
 
   const grouped = useMemo(() => {
-    const map = new Map<string, Rate[]>()
-    for (const r of pkg?.rates ?? []) {
-      const key = r.hotel_name ?? `#${r.hotel_id}`
-      if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(r)
-    }
-    return Array.from(map.entries())
+    return groupRatesByHotel(pkg?.rates ?? [])
   }, [pkg])
 
   const readyRates = useMemo(() => (pkg?.rates ?? []).filter((r) => r.status === 'Ready'), [pkg])
@@ -63,6 +58,14 @@ export default function PackageDetailPage() {
   if (error || !pkg) return <ErrorState message={(error as Error)?.message ?? 'غير موجود'} />
 
   const toggle = (rid: number) => setSelected((s) => (s.includes(rid) ? s.filter((x) => x !== rid) : [...s, rid]))
+  const toggleMany = (ids: number[], checked: boolean) => {
+    setSelected((current) => {
+      const next = new Set(current)
+      ids.forEach((rid) => (checked ? next.add(rid) : next.delete(rid)))
+      return Array.from(next)
+    })
+  }
+  const selectedSet = new Set(selected)
 
   return (
     <div>
@@ -84,7 +87,7 @@ export default function PackageDetailPage() {
           <div className="flex flex-wrap gap-2">
             <Link to={`/sales/packages/${pkg.id}`}><Button variant="outline" size="sm"><Eye className="h-4 w-4" />عرض المبيعات</Button></Link>
             <Button variant="outline" size="sm" onClick={() => setEdit(true)}><Pencil className="h-4 w-4" />تعديل</Button>
-            <Link to={`/packages/${pkg.id}/add-rates`}><Button size="sm"><Plus className="h-4 w-4" />إضافة أسعار</Button></Link>
+            <Link to={`/packages/${pkg.id}/add-rates`}><Button size="sm"><Plus className="h-4 w-4" />إضافة أسعار للفنادق</Button></Link>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5 border-t border-navy-100 pt-3">
@@ -137,15 +140,22 @@ export default function PackageDetailPage() {
 
       <SectionTitle>الأسعار حسب الفندق</SectionTitle>
       {grouped.length === 0 ? (
-        <EmptyState title="لا توجد أسعار في الباقة" description="استخدم مصفوفة الأسعار لإضافة أسعار دفعة واحدة" action={<Link to={`/packages/${pkg.id}/add-rates`}><Button><Plus className="h-4 w-4" />إضافة أسعار</Button></Link>} />
+        <EmptyState title="لا توجد أسعار في الباقة" description="أضف أسعارًا للفنادق المرتبطة وستظهر هنا تلقائيًا" action={<Link to={`/packages/${pkg.id}/add-rates`}><Button><Plus className="h-4 w-4" />إضافة أسعار للفنادق</Button></Link>} />
       ) : (
         <div className="space-y-4 pb-20">
           {grouped.map(([hotelName, rates]) => (
             <div key={hotelName}>
               <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-navy-800"><Building2 className="h-4 w-4 text-navy-500" />{hotelName}</h3>
-              <div className="space-y-2">
-                {rates.map((r) => (
-                  <RateRow key={r.id} rate={r} selectable selected={selected.includes(r.id)} onSelect={() => toggle(r.id)} />
+              <div className="space-y-3">
+                {groupRatesByPeriod(rates).map((period) => (
+                  <RatePeriodCard
+                    key={`${hotelName}-${period.key}`}
+                    rates={period.rates}
+                    selectable
+                    selectedIds={selectedSet}
+                    onToggleRate={(rid) => toggle(rid)}
+                    onToggleGroup={toggleMany}
+                  />
                 ))}
               </div>
             </div>

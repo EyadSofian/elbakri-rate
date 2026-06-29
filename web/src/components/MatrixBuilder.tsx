@@ -10,7 +10,17 @@ import { useHotels, usePackages, useLists } from '@/lib/hooks'
 import { api, ApiError } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-export function MatrixBuilder({ fixedPackageId, presetHotelIds, onDone }: { fixedPackageId?: number; presetHotelIds?: number[]; onDone?: () => void }) {
+export function MatrixBuilder({
+  fixedPackageId,
+  presetHotelIds,
+  independentOnly,
+  onDone,
+}: {
+  fixedPackageId?: number
+  presetHotelIds?: number[]
+  independentOnly?: boolean
+  onDone?: () => void
+}) {
   const toast = useToast()
   const qc = useQueryClient()
   const { data: hotels } = useHotels()
@@ -38,7 +48,7 @@ export function MatrixBuilder({ fixedPackageId, presetHotelIds, onDone }: { fixe
   const save = useMutation({
     mutationFn: () =>
       api.post<{ rates_created: number }>('/rates/matrix', {
-        package_id: packageId ? Number(packageId) : null,
+        package_id: independentOnly ? null : packageId ? Number(packageId) : null,
         hotel_ids: hotelIds,
         periods: periodsToApi(periods),
         overwrite,
@@ -60,7 +70,7 @@ export function MatrixBuilder({ fixedPackageId, presetHotelIds, onDone }: { fixe
 
   return (
     <div className="space-y-5 pb-24">
-      {!fixedPackageId && (
+      {!fixedPackageId && !independentOnly && (
         <div className="card p-4">
           <Field label="الباقة (اختياري)">
             <Select value={packageId} onChange={(e) => { setPackageId(e.target.value); setHotelIds([]) }}>
