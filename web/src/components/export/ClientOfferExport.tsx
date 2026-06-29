@@ -87,9 +87,7 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
         />
 
         <div className="relative flex items-center justify-end">
-          <div className="flex min-h-[112px] w-[430px] items-center rounded-[18px] bg-white px-5 shadow-[0_12px_35px_rgba(7,24,74,0.12)]">
-            <img src="/elbakri-logo.png" alt="" className="h-[86px] w-auto object-contain" />
-          </div>
+          <img src="/elbakri-logo.png" alt="" className="h-[118px] w-auto max-w-[520px] object-contain" />
         </div>
 
         <div className="relative mt-8 overflow-hidden rounded-[28px] px-8 py-8 text-white shadow-[0_16px_40px_rgba(7,24,74,0.18)]" style={{ background: `linear-gradient(135deg, ${navy} 0%, ${navy2} 100%)` }}>
