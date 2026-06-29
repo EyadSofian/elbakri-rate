@@ -30,7 +30,24 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: web
-        run: npm ci
+        run: |
+          set -euo pipefail
+          npm config set registry https://registry.npmjs.org/
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-retry-mintimeout 20000
+          npm config set fetch-retry-maxtimeout 120000
+
+          for attempt in 1 2 3; do
+            echo "npm ci attempt ${attempt}/3"
+            if npm ci --prefer-offline --no-audit; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 20))
+          done
 
       - name: Build frontend
         working-directory: web
