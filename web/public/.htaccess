@@ -1,0 +1,22 @@
+# ELBAKRI Hotel Rate Hub — SPA routing for GoDaddy / Apache
+# Upload the contents of dist/ (including this file) to public_html
+
+RewriteEngine On
+RewriteBase /
+
+# Serve the API folder and real files/dirs directly
+RewriteRule ^api/ - [L]
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+
+# Cache static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+</IfModule>
+
+AddDefaultCharset UTF-8

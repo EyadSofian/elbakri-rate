@@ -1,1 +1,0 @@
-ALTER TABLE public.hotel_rates ALTER COLUMN package_name DROP NOT NULL;
