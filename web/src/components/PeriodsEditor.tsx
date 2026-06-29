@@ -90,7 +90,7 @@ export function PeriodsEditor({ value, onChange, lists }: { value: Period[]; onC
   const remove = (id: string) => onChange(value.filter((p) => p.id !== id))
   const duplicate = (p: Period) => onChange([...value, newPeriod({ ...p, id: undefined })])
 
-  const meals = lists?.meal_plans ?? (['RO', 'BB', 'HB', 'FB', 'AI', 'UAI'] as MealPlan[])
+  const meals = lists?.meal_plans ?? (['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI'] as MealPlan[])
   const bases = lists?.pricing_basis ?? (Object.keys(pricingBasisLabel) as PricingBasis[])
   const currencies = lists?.currencies ?? (['EGP', 'USD', 'EUR', 'SAR'] as Currency[])
   const transfers = lists?.transfer_opts ?? (['Included', 'Optional', 'Not Included'] as TransferOpt[])

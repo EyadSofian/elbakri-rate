@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS `hotel_rates` (
   `date_from`         DATE NULL,
   `date_to`           DATE NULL,
   `room_type`         VARCHAR(60)  NOT NULL DEFAULT 'Double', -- Single|Double|Triple|Custom...
-  `meal_plan`         VARCHAR(10)  NOT NULL DEFAULT 'BB',     -- RO|BB|HB|FB|AI|UAI
+  `meal_plan`         VARCHAR(10)  NOT NULL DEFAULT 'BB',     -- RO|BB|HB|FB|AI|SAI|UAI
   `pricing_basis`     VARCHAR(40)  NOT NULL DEFAULT 'per_person_per_night',
   `currency`          VARCHAR(3)   NOT NULL DEFAULT 'EGP',    -- EGP|USD|EUR|SAR
   `adult_price`       DECIMAL(12,2) NULL,

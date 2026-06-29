@@ -168,7 +168,7 @@ export function RateForm({
         </Field>
         <Field label="الإقامة">
           <Select value={f.meal_plan} onChange={(e) => set('meal_plan', e.target.value)}>
-            {(lists?.meal_plans ?? ['RO', 'BB', 'HB', 'FB', 'AI', 'UAI']).map((m) => <option key={m} value={m}>{mealPlanLabel[m] ?? m}</option>)}
+            {(lists?.meal_plans ?? ['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI']).map((m) => <option key={m} value={m}>{mealPlanLabel[m] ?? m}</option>)}
           </Select>
         </Field>
         <Field label="من تاريخ"><Input type="date" value={f.date_from} onChange={(e) => set('date_from', e.target.value)} /></Field>

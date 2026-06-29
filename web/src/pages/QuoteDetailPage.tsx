@@ -88,10 +88,12 @@ export default function QuoteDetailPage() {
                     <div className="font-bold text-navy-900">{roomLabel(r.room_type)} · {mealLabel(r.meal_plan)}</div>
                     <div className="nums mt-0.5 text-xs text-ink-muted">{formatDateRange(r.date_from, r.date_to)}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">
-                      <span className="inline-flex items-center gap-1">
-                        <Bus className="h-3.5 w-3.5 text-navy-500" />
-                        {transferLabel[r.transfer_included]}
-                      </span>
+                      {r.transfer_included !== 'Not Included' && (
+                        <span className="inline-flex items-center gap-1">
+                          <Bus className="h-3.5 w-3.5 text-navy-500" />
+                          {transferLabel[r.transfer_included]}
+                        </span>
+                      )}
                       {r.custom_note ? (
                         <span className="inline-flex items-center gap-1">
                           <StickyNote className="h-3.5 w-3.5 text-navy-500" />

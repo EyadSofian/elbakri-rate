@@ -95,7 +95,7 @@ export function PackageForm({ open, onClose, pkg }: { open: boolean; onClose: ()
         <Field label="الإقامة الافتراضية">
           <Select value={f.default_meal_plan} onChange={(e) => set('default_meal_plan', e.target.value)}>
             <option value="">—</option>
-            {(lists?.meal_plans ?? ['RO', 'BB', 'HB', 'FB', 'AI', 'UAI']).map((m) => <option key={m} value={m}>{mealPlanLabel[m] ?? m}</option>)}
+            {(lists?.meal_plans ?? ['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI']).map((m) => <option key={m} value={m}>{mealPlanLabel[m] ?? m}</option>)}
           </Select>
         </Field>
         <Field label="أساس التسعير الافتراضي" className="sm:col-span-2">

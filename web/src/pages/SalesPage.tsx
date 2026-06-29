@@ -9,10 +9,12 @@ import { Input, Select } from '@/components/ui/inputs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { OfferCard } from '@/components/OfferCard'
-import { REGIONS, mealPlanLabel } from '@/lib/labels'
+import { useI18n } from '@/lib/i18n'
+import { REGIONS, categoryText, mealLabel, roomLabel } from '@/lib/labels'
 import type { Rate, MealPlan } from '@/types'
 
 export default function SalesPage() {
+  const { t, lang } = useI18n()
   const [tab, setTab] = useState<'hotels' | 'packages'>('hotels')
   const [showFilters, setShowFilters] = useState(false)
   const [q, setQ] = useState('')
@@ -44,14 +46,14 @@ export default function SalesPage() {
 
   return (
     <div>
-      <PageHeader title="عروض المبيعات" subtitle="الأسعار الجاهزة فقط — أضفها لعرض السعر وصدّرها للعميل" />
+      <PageHeader title={t('sales.title')} subtitle={t('sales.subtitle')} />
 
       <div className="mb-4 flex gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute inset-y-0 right-3 my-auto h-4 w-4 text-ink-muted" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث عن فندق أو باقة..." className="pr-9" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('sales.searchPlaceholder')} className="pr-9" />
         </div>
-        <Button variant={showFilters ? 'subtle' : 'outline'} size="icon" onClick={() => setShowFilters((s) => !s)} aria-label="فلترة">
+        <Button variant={showFilters ? 'subtle' : 'outline'} size="icon" onClick={() => setShowFilters((s) => !s)} aria-label={t('sales.filter')}>
           <SlidersHorizontal className="h-5 w-5" />
         </Button>
       </div>
@@ -59,21 +61,21 @@ export default function SalesPage() {
       {showFilters && (
         <div className="mb-4 grid grid-cols-2 gap-2 rounded-card border border-navy-100 bg-white p-3 sm:grid-cols-4">
           <Select value={region} onChange={(e) => setRegion(e.target.value)}>
-            <option value="">كل المناطق</option>
+            <option value="">{t('sales.allRegions')}</option>
             {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
           </Select>
           <Select value={room} onChange={(e) => setRoom(e.target.value)}>
-            <option value="">كل الغرف</option>
-            {['Single', 'Double', 'Triple', 'Family'].map((r) => <option key={r} value={r}>{r}</option>)}
+            <option value="">{t('sales.allRooms')}</option>
+            {['Single', 'Double', 'Triple', 'Family'].map((r) => <option key={r} value={r}>{roomLabel(r, lang)}</option>)}
           </Select>
           <Select value={meal} onChange={(e) => setMeal(e.target.value)}>
-            <option value="">كل الإقامات</option>
-            {(['RO', 'BB', 'HB', 'FB', 'AI', 'UAI'] as MealPlan[]).map((m) => <option key={m} value={m}>{mealPlanLabel[m]}</option>)}
+            <option value="">{t('sales.allMeals')}</option>
+            {(['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI'] as MealPlan[]).map((m) => <option key={m} value={m}>{mealLabel(m, lang)}</option>)}
           </Select>
-          <Input type="number" inputMode="decimal" placeholder="أقصى سعر" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
+          <Input type="number" inputMode="decimal" placeholder={t('sales.maxPrice')} value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
           <label className="col-span-2 flex min-h-[44px] items-center gap-2 text-sm sm:col-span-4">
             <input type="checkbox" checked={transfersOnly} onChange={(e) => setTransfersOnly(e.target.checked)} className="h-5 w-5 accent-navy-700" />
-            انتقالات مشمولة فقط
+            {t('sales.transfersOnly')}
           </label>
         </div>
       )}
@@ -82,8 +84,8 @@ export default function SalesPage() {
         active={tab}
         onChange={setTab}
         tabs={[
-          { key: 'hotels', label: 'عروض الفنادق', count: hotelOffers.length },
-          { key: 'packages', label: 'عروض الباكدجات', count: readyPackages.length },
+          { key: 'hotels', label: t('sales.tabHotels'), count: hotelOffers.length },
+          { key: 'packages', label: t('sales.tabPackages'), count: readyPackages.length },
         ]}
       />
 
@@ -96,12 +98,12 @@ export default function SalesPage() {
               <Link key={p.id} to={`/sales/packages/${p.id}`} className="card group flex flex-col gap-2 p-4 transition hover:border-gold hover:shadow-soft">
                 <div className="flex items-start justify-between">
                   <h3 className="font-bold text-navy-900">{p.package_name}</h3>
-                  <Badge tone="gold">{p.package_type || 'باقة'}</Badge>
+                  <Badge tone="gold">{categoryText(p.package_type, lang)}</Badge>
                 </div>
                 {p.region && <span className="inline-flex items-center gap-1 text-xs text-ink-muted"><MapPin className="h-3.5 w-3.5" />{p.region}</span>}
                 <div className="mt-1 flex items-center justify-between border-t border-navy-100 pt-2 text-xs">
-                  <span className="inline-flex items-center gap-1 text-green-600"><CheckCircle2 className="h-3.5 w-3.5" /><span className="nums">{p.ready_rates_count}</span> سعر جاهز</span>
-                  <span className="inline-flex items-center gap-1 font-semibold text-navy-700 group-hover:text-gold-dark">عرض احترافي <ArrowLeft className="h-3.5 w-3.5" /></span>
+                  <span className="inline-flex items-center gap-1 text-green-600"><CheckCircle2 className="h-3.5 w-3.5" /><span className="nums">{p.ready_rates_count}</span> {t('sales.readyRate')}</span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-navy-700 group-hover:text-gold-dark">{t('sales.proOffer')} <ArrowLeft className="h-3.5 w-3.5" /></span>
                 </div>
               </Link>
             ))}
@@ -115,8 +117,8 @@ export default function SalesPage() {
       ) : list.length === 0 ? (
         <EmptyState
           icon={tab === 'hotels' ? <Tag className="h-7 w-7" /> : <PackageIcon className="h-7 w-7" />}
-          title="لا توجد عروض جاهزة"
-          description="ستظهر هنا الأسعار التي حالتها «جاهز» ضمن نطاق صلاحياتك"
+          title={t('sales.emptyTitle')}
+          description={t('sales.emptyDesc')}
         />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

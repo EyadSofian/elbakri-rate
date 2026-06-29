@@ -27,6 +27,7 @@ export function RatePeriodCard({
   const ids = rates.map((r) => r.id)
   const allSelected = ids.length > 0 && ids.every((id) => selectedIds?.has(id))
   const statuses = Array.from(new Set(rates.map((r) => r.status)))
+  const showTransfer = first.transfer_included !== 'Not Included'
 
   return (
     <div className={cn('rounded-card border border-navy-100 bg-white p-3', allSelected && 'border-gold ring-1 ring-gold/40')}>
@@ -62,10 +63,12 @@ export function RatePeriodCard({
               <BedDouble className="h-3.5 w-3.5" />
               {pricingBasisLabel[first.pricing_basis]}
             </span>
-            <span className={cn('inline-flex items-center gap-1', first.transfer_included === 'Included' && 'text-green-600')}>
-              <Bus className="h-3.5 w-3.5" />
-              {transferLabel[first.transfer_included]}
-            </span>
+            {showTransfer && (
+              <span className={cn('inline-flex items-center gap-1', first.transfer_included === 'Included' && 'text-green-600')}>
+                <Bus className="h-3.5 w-3.5" />
+                {transferLabel[first.transfer_included]}
+              </span>
+            )}
           </div>
         </div>
         {!compact && first.child_policy && <p className="max-w-md text-xs text-ink-muted">{first.child_policy}</p>}
