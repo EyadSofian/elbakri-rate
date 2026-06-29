@@ -1,6 +1,6 @@
 import { forwardRef, useMemo, type ReactNode } from 'react'
 import { Baby, Bus, CalendarDays, Hotel, MapPin, Phone, ShieldCheck, Utensils } from 'lucide-react'
-import { formatDate, formatDateRange, formatPrice } from '@/lib/utils'
+import { formatDateRange, formatPrice } from '@/lib/utils'
 import { mealLabel, roomLabel, transferLabel } from '@/lib/labels'
 import { groupRatesByHotel, groupRatesByPeriod } from '@/lib/rateGrouping'
 import type { Rate } from '@/types'
@@ -33,14 +33,6 @@ function priceParts(value: Rate['adult_price'], currency: Rate['currency']) {
     : { amount: price, currency: '' }
 }
 
-function InfoPill({ children }: { children: ReactNode }) {
-  return (
-    <span className="inline-flex min-h-[34px] items-center gap-2 rounded-full bg-white/10 px-4 text-[19px] font-bold leading-[1.25] text-white">
-      {children}
-    </span>
-  )
-}
-
 function TextNote({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
   return (
     <div className="flex min-w-0 items-start gap-3 rounded-[16px] bg-white px-4 py-3 text-right">
@@ -60,7 +52,6 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
   ref,
 ) {
   const groups = useMemo(() => groupRatesByHotel(items), [items])
-  const today = formatDate(new Date().toISOString())
   const first = items[0]
   const offerTitle = title || first?.package_name || 'عرض سعر'
   const offerSubtitle = subtitle || firstText([first?.region, first?.hotel_group]) || 'الأسعار للفرد حسب الفترة والغرفة'
@@ -71,7 +62,7 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
       dir="rtl"
       style={{
         width: 1080,
-        minHeight: 1760,
+        minHeight: 1320,
         background: '#FFFFFF',
         color: navy,
         display: 'flex',
@@ -95,18 +86,9 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
           style={{ background: 'radial-gradient(circle, rgba(200,162,74,0.18), rgba(200,162,74,0))' }}
         />
 
-        <div className="relative flex items-start justify-between gap-8">
+        <div className="relative flex items-center justify-end">
           <div className="flex min-h-[112px] w-[430px] items-center rounded-[18px] bg-white px-5 shadow-[0_12px_35px_rgba(7,24,74,0.12)]">
             <img src="/elbakri-logo.png" alt="" className="h-[86px] w-auto object-contain" />
-          </div>
-          <div className="text-left">
-            <div className="text-[22px] font-bold leading-[1.25]" style={{ color: '#52617E' }}>التاريخ</div>
-            <div className="nums mt-1 text-[31px] font-black leading-[1.1]" style={{ color: navy }}>{today}</div>
-            {client && (
-              <div className="mt-4 rounded-full px-5 py-2 text-[19px] font-extrabold leading-[1.25]" style={{ background: '#FFFFFF', color: navy }}>
-                مقدم إلى: {client}
-              </div>
-            )}
           </div>
         </div>
 
@@ -114,8 +96,15 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
           <div className="absolute -left-16 -top-16 h-48 w-48 rounded-full bg-white/10" />
           <div className="absolute -bottom-24 right-12 h-56 w-56 rounded-full" style={{ background: 'rgba(200,162,74,0.16)' }} />
           <div className="relative flex flex-wrap items-center justify-between gap-4">
-            <div className="rounded-full px-5 py-2 text-[21px] font-black leading-[1.2]" style={{ background: gold, color: navy }}>
-              عرض سعر
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="rounded-full px-5 py-2 text-[21px] font-black leading-[1.2]" style={{ background: gold, color: navy }}>
+                عرض سعر
+              </div>
+              {client && (
+                <div className="rounded-full bg-white/10 px-5 py-2 text-[19px] font-extrabold leading-[1.25] text-white">
+                  مقدم إلى: {client}
+                </div>
+              )}
             </div>
             <div className="text-left text-[22px] font-extrabold leading-[1.25] text-white/90">
               ELBAKRI OVERSEAS FOR TRAVEL
@@ -144,15 +133,15 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
 
               return (
                 <section key={hotel} className="overflow-hidden rounded-[28px] border shadow-[0_10px_28px_rgba(7,24,74,0.10)]" style={{ borderColor: border }}>
-                  <div className="flex items-center justify-between gap-6 px-7 py-5 text-white" style={{ background: `linear-gradient(135deg, ${navy} 0%, ${navy2} 100%)` }}>
-                    <div className="flex min-w-0 items-center gap-4">
+                  <div className="flex items-start justify-between gap-6 px-7 py-5 text-white" style={{ background: `linear-gradient(135deg, ${navy} 0%, ${navy2} 100%)` }}>
+                    <div className="flex min-w-0 max-w-[720px] items-start gap-4">
                       <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-white/30 bg-white/10">
                         <Hotel className="h-9 w-9" />
                       </div>
                       <div className="min-w-0">
-                        <h2 className="break-words text-[38px] font-black leading-[1.15] text-white">{hotel}</h2>
+                        <h2 className="break-words text-[34px] font-black leading-[1.12] text-white">{hotel}</h2>
                         {location && (
-                          <div className="mt-1 flex items-center gap-2 text-[21px] font-bold leading-[1.25] text-white/75">
+                          <div className="mt-2 flex items-center gap-2 text-[19px] font-bold leading-[1.3] text-white/75">
                             <MapPin className="h-5 w-5 shrink-0" />
                             <span>{location}</span>
                           </div>
@@ -176,19 +165,30 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
 
                       return (
                         <div key={`${hotel}-${period.key}`} className="overflow-hidden rounded-[22px] border bg-white" style={{ borderColor: border }}>
-                          <div className="flex flex-wrap items-center gap-3 px-5 py-4 text-white" style={{ background: navy }}>
-                            <InfoPill>
-                              <CalendarDays className="h-6 w-6" />
-                              <span className="nums">{formatDateRange(periodFirst.date_from, periodFirst.date_to)}</span>
-                            </InfoPill>
-                            <InfoPill>
-                              <Utensils className="h-6 w-6" />
-                              <span>{mealLabel(periodFirst.meal_plan)}</span>
-                            </InfoPill>
-                            <InfoPill>
-                              <Bus className="h-6 w-6" />
-                              <span>الانتقالات: {transferLabel[periodFirst.transfer_included]}</span>
-                            </InfoPill>
+                          <div className="grid gap-3 px-5 py-4 text-white" style={{ background: navy, gridTemplateColumns: '1.45fr 0.8fr 1fr' }}>
+                            <div className="flex min-h-[62px] items-center gap-3 rounded-[18px] bg-white/10 px-4">
+                              <CalendarDays className="h-7 w-7 shrink-0 text-white" />
+                              <div className="min-w-0">
+                                <div className="text-[15px] font-extrabold leading-[1.2] text-white/70">الفترة</div>
+                                <div className="nums mt-1 text-[23px] font-black leading-none text-white" style={{ whiteSpace: 'nowrap' }}>
+                                  {formatDateRange(periodFirst.date_from, periodFirst.date_to)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex min-h-[62px] items-center gap-3 rounded-[18px] bg-white/10 px-4">
+                              <Utensils className="h-7 w-7 shrink-0 text-white" />
+                              <div>
+                                <div className="text-[15px] font-extrabold leading-[1.2] text-white/70">الإقامة</div>
+                                <div className="mt-1 text-[22px] font-black leading-none text-white">{mealLabel(periodFirst.meal_plan)}</div>
+                              </div>
+                            </div>
+                            <div className="flex min-h-[62px] items-center gap-3 rounded-[18px] bg-white/10 px-4">
+                              <Bus className="h-7 w-7 shrink-0 text-white" />
+                              <div className="min-w-0">
+                                <div className="text-[15px] font-extrabold leading-[1.2] text-white/70">الانتقالات</div>
+                                <div className="mt-1 truncate text-[20px] font-black leading-none text-white">{transferLabel[periodFirst.transfer_included]}</div>
+                              </div>
+                            </div>
                           </div>
 
                           <div className="grid" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
