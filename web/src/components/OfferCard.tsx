@@ -15,7 +15,6 @@ export function OfferCard({ rate, stars }: { rate: Rate; stars?: number | null }
   const { t, lang } = useI18n()
   const [busy, setBusy] = useState(false)
   const added = rateIds.has(rate.id)
-  const showTransfer = rate.transfer_included !== 'Not Included'
 
   const add = async () => {
     if (added || busy) return
@@ -48,16 +47,14 @@ export function OfferCard({ rate, stars }: { rate: Rate; stars?: number | null }
 
       <div className="flex flex-1 flex-col gap-2.5 p-4">
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-ink">
-          <span className="inline-flex items-center gap-1.5"><CalendarRange className="h-4 w-4 shrink-0 text-navy-400" />{formatDateRange(rate.date_from, rate.date_to)}</span>
+          <span className="inline-flex items-center gap-1.5"><CalendarRange className="h-4 w-4 shrink-0 text-navy-400" />{formatDateRange(rate.date_from, rate.date_to, t('export.allPeriods'))}</span>
           <span className="inline-flex items-center gap-1.5"><BedDouble className="h-4 w-4 shrink-0 text-navy-400" />{roomLabel(rate.room_type, lang)} · {mealLabel(rate.meal_plan, lang)}</span>
         </div>
         <div className="flex items-center gap-3 text-xs text-ink-muted">
-          {showTransfer && (
-            <span className={cn('inline-flex items-center gap-1', rate.transfer_included === 'Included' && 'text-green-600')}>
-              <Bus className="h-3.5 w-3.5 shrink-0" />{transferText(rate.transfer_included, lang)}
-            </span>
-          )}
-          {rate.child_policy && <span className="inline-flex items-center gap-1 truncate"><Baby className="h-3.5 w-3.5" />{rate.child_policy.slice(0, 40)}</span>}
+          <span className={cn('inline-flex items-center gap-1', rate.transfer_included === 'Included' && 'text-green-600')}>
+            <Bus className="h-3.5 w-3.5 shrink-0" />{transferText(rate.transfer_included, lang)}
+          </span>
+          {rate.child_policy && <span className="inline-flex items-center gap-1 truncate"><Baby className="h-3.5 w-3.5 shrink-0" />{rate.child_policy.slice(0, 40)}</span>}
         </div>
 
         <div className="mt-auto flex items-end justify-between gap-2 pt-2">

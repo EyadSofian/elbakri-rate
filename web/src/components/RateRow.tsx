@@ -1,7 +1,8 @@
 import { Pencil, Trash2, CalendarRange, BedDouble, Bus } from 'lucide-react'
 import { RateStatusBadge, Badge } from '@/components/ui/badge'
 import { formatPrice, formatDateRange, cn } from '@/lib/utils'
-import { mealLabel, roomLabel, transferLabel } from '@/lib/labels'
+import { mealLabel, roomLabel, transferText } from '@/lib/labels'
+import { useI18n } from '@/lib/i18n'
 import type { Rate } from '@/types'
 
 export function RateRow({
@@ -21,6 +22,7 @@ export function RateRow({
   onEdit?: () => void
   onDelete?: () => void
 }) {
+  const { t, lang } = useI18n()
   return (
     <div className={cn('flex items-center gap-3 rounded-card border border-navy-100 bg-white p-3', selected && 'border-navy-300 ring-1 ring-navy-200')}>
       {selectable && (
@@ -38,9 +40,9 @@ export function RateRow({
           <RateStatusBadge status={rate.status} />
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-ink-muted">
-          <span className="inline-flex items-center gap-1"><CalendarRange className="h-3.5 w-3.5" />{formatDateRange(rate.date_from, rate.date_to)}</span>
-          <span className="inline-flex items-center gap-1"><BedDouble className="h-3.5 w-3.5" />{roomLabel(rate.room_type)} · {mealLabel(rate.meal_plan)}</span>
-          {rate.transfer_included === 'Included' && <span className="inline-flex items-center gap-1 text-green-600"><Bus className="h-3.5 w-3.5" />{transferLabel.Included}</span>}
+          <span className="inline-flex items-center gap-1"><CalendarRange className="h-3.5 w-3.5 shrink-0" />{formatDateRange(rate.date_from, rate.date_to, t('export.allPeriods'))}</span>
+          <span className="inline-flex items-center gap-1"><BedDouble className="h-3.5 w-3.5 shrink-0" />{roomLabel(rate.room_type, lang)} · {mealLabel(rate.meal_plan, lang)}</span>
+          {rate.transfer_included === 'Included' && <span className="inline-flex items-center gap-1 text-green-600"><Bus className="h-3.5 w-3.5 shrink-0" />{transferText('Included', lang)}</span>}
         </div>
       </div>
       <div className="shrink-0 text-left">
@@ -50,12 +52,12 @@ export function RateRow({
       {(onEdit || onDelete) && (
         <div className="flex shrink-0 items-center gap-1">
           {onEdit && (
-            <button onClick={onEdit} className="grid h-9 w-9 place-items-center rounded-btn text-navy-500 hover:bg-navy-50" aria-label="تعديل">
+            <button onClick={onEdit} className="grid h-9 w-9 place-items-center rounded-btn text-navy-500 hover:bg-navy-50" aria-label={t('common.edit')}>
               <Pencil className="h-4 w-4" />
             </button>
           )}
           {onDelete && (
-            <button onClick={onDelete} className="grid h-9 w-9 place-items-center rounded-btn text-red-500 hover:bg-red-50" aria-label="حذف">
+            <button onClick={onDelete} className="grid h-9 w-9 place-items-center rounded-btn text-red-500 hover:bg-red-50" aria-label={t('common.delete')}>
               <Trash2 className="h-4 w-4" />
             </button>
           )}

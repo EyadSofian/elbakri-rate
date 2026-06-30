@@ -64,7 +64,7 @@ function v_enum($val, array $allowed, $default = null)
 
 /** Canonical lists (single source of truth, mirrored on the frontend). */
 const ROOM_TYPES     = ['Single', 'Double', 'Triple', 'Quad', 'Family', 'Custom'];
-const MEAL_PLANS     = ['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI'];
+const MEAL_PLANS     = ['RO', 'BB', 'HB', 'FB', 'AI', 'UAI'];
 const PRICING_BASES  = ['per_person_per_night', 'per_room_per_night', 'per_person_package', 'per_room_package'];
 const CURRENCIES     = ['EGP', 'USD', 'EUR', 'SAR'];
 const RATE_STATUSES  = ['Draft', 'Ready', 'Archived'];

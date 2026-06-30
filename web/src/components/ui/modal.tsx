@@ -2,6 +2,7 @@ import { useEffect, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 import { Button } from './button'
 
 export function Modal({
@@ -63,9 +64,9 @@ export function ConfirmDialog({
   open,
   onClose,
   onConfirm,
-  title = 'تأكيد',
+  title,
   message,
-  confirmText = 'تأكيد',
+  confirmText,
   danger,
   loading,
 }: {
@@ -78,19 +79,20 @@ export function ConfirmDialog({
   danger?: boolean
   loading?: boolean
 }) {
+  const { t } = useI18n()
   return (
     <Modal
       open={open}
       onClose={onClose}
-      title={title}
+      title={title ?? t('confirm.title')}
       size="sm"
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={loading}>
-            إلغاء
+            {t('common.cancel')}
           </Button>
           <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm} loading={loading}>
-            {confirmText}
+            {confirmText ?? t('common.confirm')}
           </Button>
         </>
       }

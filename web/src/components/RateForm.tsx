@@ -5,8 +5,9 @@ import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/inputs'
 import { useToast } from '@/components/ui/toast'
+import { useI18n } from '@/lib/i18n'
 import { useHotels, usePackages, useLists } from '@/lib/hooks'
-import { mealPlanLabel, pricingBasisLabel, rateStatusLabel, transferLabel, roomTypeLabel } from '@/lib/labels'
+import { mealLabel, pricingText, transferText, roomLabel } from '@/lib/labels'
 import { api, ApiError } from '@/lib/api'
 import type { Rate, MealPlan, PricingBasis, Currency, RateStatus, TransferOpt } from '@/types'
 import { PeriodsEditor, countRecords, newPeriod, periodsToApi, type Period } from './PeriodsEditor'
@@ -27,6 +28,7 @@ export function RateForm({
   const editing = !!rate
   const toast = useToast()
   const qc = useQueryClient()
+  const { t, lang } = useI18n()
   const { data: hotels } = useHotels()
   const { data: packages } = usePackages()
   const { data: lists } = useLists()
@@ -76,21 +78,21 @@ export function RateForm({
       qc.invalidateQueries()
       toast.success(
         editing
-          ? 'تم تحديث السعر'
+          ? t('rateForm.updated')
           : mode === 'periods'
-            ? `تم إضافة ${countRecords(periods)} سعر من الفترات`
-            : 'تم إضافة السعر',
+            ? t('rateForm.addedN', { n: countRecords(periods) })
+            : t('rateForm.added'),
       )
       setMode('single')
       setPeriods([newPeriod()])
       onClose()
     },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'تعذّر الحفظ'),
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.save')),
   })
 
   const submit = () => {
-    if (!f.hotel_id) return toast.error('اختر الفندق')
-    if (!editing && mode === 'periods' && countRecords(periods) === 0) return toast.error('أدخل سعرًا واحدًا على الأقل داخل الفترات')
+    if (!f.hotel_id) return toast.error(t('rateForm.selectHotelErr'))
+    if (!editing && mode === 'periods' && countRecords(periods) === 0) return toast.error(t('rateForm.atLeastOne'))
     save.mutate()
   }
 
@@ -101,11 +103,11 @@ export function RateForm({
       open={open}
       onClose={onClose}
       size={mode === 'periods' ? 'xl' : 'lg'}
-      title={<span className="flex items-center gap-2"><Tag className="h-5 w-5 text-navy-600" />{editing ? 'تعديل سعر' : 'إضافة سعر'}</span>}
+      title={<span className="flex items-center gap-2"><Tag className="h-5 w-5 text-navy-600" />{editing ? t('rateForm.editTitle') : t('rateForm.addTitle')}</span>}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>إلغاء</Button>
-          <Button onClick={submit} loading={save.isPending}>{editing ? 'حفظ' : 'إضافة'}</Button>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button onClick={submit} loading={save.isPending}>{editing ? t('common.save') : t('common.add')}</Button>
         </>
       }
     >
@@ -117,30 +119,30 @@ export function RateForm({
               onClick={() => setMode('single')}
               className={`rounded-btn px-3 py-2 text-sm font-bold transition ${mode === 'single' ? 'bg-white text-navy-900 shadow-sm' : 'text-ink-muted'}`}
             >
-              <Tag className="ml-1 inline h-4 w-4" />
-              سعر واحد
+              <Tag className="me-1 inline h-4 w-4" />
+              {t('rateForm.single')}
             </button>
             <button
               type="button"
               onClick={() => setMode('periods')}
               className={`rounded-btn px-3 py-2 text-sm font-bold transition ${mode === 'periods' ? 'bg-white text-navy-900 shadow-sm' : 'text-ink-muted'}`}
             >
-              <Layers className="ml-1 inline h-4 w-4" />
-              فترات متعددة
+              <Layers className="me-1 inline h-4 w-4" />
+              {t('rateForm.multi')}
             </button>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-3">
-        <Field label="الفندق" required className="col-span-2">
+        <Field label={t('rateForm.hotel')} required className="col-span-2">
           <Select value={f.hotel_id} onChange={(e) => set('hotel_id', e.target.value)} disabled={!!fixedHotelId}>
-            <option value="">— اختر الفندق —</option>
+            <option value="">{t('rateForm.selectHotel')}</option>
             {hotels?.map((h) => <option key={h.id} value={h.id}>{h.hotel_name}</option>)}
           </Select>
         </Field>
-        <Field label="الباقة (اختياري)" className="col-span-2">
+        <Field label={t('rateForm.package')} className="col-span-2">
           <Select value={f.package_id} onChange={(e) => set('package_id', e.target.value)} disabled={!!fixedPackageId}>
-            <option value="">— سعر مستقل بدون باقة —</option>
+            <option value="">{t('rateForm.independentOption')}</option>
             {packages?.map((p) => <option key={p.id} value={p.id}>{p.package_name}</option>)}
           </Select>
         </Field>
@@ -150,53 +152,53 @@ export function RateForm({
           <div className="rounded-card border border-navy-100 bg-white p-3">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h3 className="font-extrabold text-navy-900">الفترات والأسعار</h3>
-                <p className="text-xs text-ink-muted">أضف أكثر من فترة، وكل فترة ممكن يكون لها أسعار مزدوجة/ثلاثية/فردية أو غرفة مخصصة.</p>
+                <h3 className="font-extrabold text-navy-900">{t('rateForm.periodsTitle')}</h3>
+                <p className="text-xs text-ink-muted">{t('rateForm.periodsHint')}</p>
               </div>
               <span className="rounded-full bg-gold/15 px-2.5 py-1 text-xs font-bold text-navy-900">
-                سيتم إنشاء <span className="nums">{countRecords(periods)}</span> سعر
+                {t('rateForm.willCreate', { n: countRecords(periods) })}
               </span>
             </div>
             <PeriodsEditor value={periods} onChange={setPeriods} lists={lists} />
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-        <Field label="نوع الغرفة">
+        <Field label={t('rateForm.roomType')}>
           <Select value={f.room_type} onChange={(e) => set('room_type', e.target.value)}>
-            {rooms.map((r) => <option key={r} value={r}>{roomTypeLabel[r] ?? r}</option>)}
+            {rooms.map((r) => <option key={r} value={r}>{roomLabel(r, lang)}</option>)}
           </Select>
         </Field>
-        <Field label="الإقامة">
+        <Field label={t('rateForm.meal')}>
           <Select value={f.meal_plan} onChange={(e) => set('meal_plan', e.target.value)}>
-            {(lists?.meal_plans ?? ['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI']).map((m) => <option key={m} value={m}>{mealPlanLabel[m] ?? m}</option>)}
+            {(lists?.meal_plans ?? ['RO', 'BB', 'HB', 'FB', 'AI', 'UAI']).map((m) => <option key={m} value={m}>{mealLabel(m, lang)}</option>)}
           </Select>
         </Field>
-        <Field label="من تاريخ"><Input type="date" value={f.date_from} onChange={(e) => set('date_from', e.target.value)} /></Field>
-        <Field label="إلى تاريخ"><Input type="date" value={f.date_to} onChange={(e) => set('date_to', e.target.value)} /></Field>
-        <Field label="سعر الفرد"><Input type="number" inputMode="decimal" value={f.adult_price} onChange={(e) => set('adult_price', e.target.value)} /></Field>
-        <Field label="سعر الطفل"><Input type="number" inputMode="decimal" value={f.child_price} onChange={(e) => set('child_price', e.target.value)} /></Field>
-        <Field label="أساس التسعير">
+        <Field label={t('rateForm.dateFrom')}><Input type="date" value={f.date_from} onChange={(e) => set('date_from', e.target.value)} /></Field>
+        <Field label={t('rateForm.dateTo')}><Input type="date" value={f.date_to} onChange={(e) => set('date_to', e.target.value)} /></Field>
+        <Field label={t('rateForm.adultPrice')}><Input type="number" inputMode="decimal" value={f.adult_price} onChange={(e) => set('adult_price', e.target.value)} /></Field>
+        <Field label={t('rateForm.childPrice')}><Input type="number" inputMode="decimal" value={f.child_price} onChange={(e) => set('child_price', e.target.value)} /></Field>
+        <Field label={t('rateForm.pricingBasis')}>
           <Select value={f.pricing_basis} onChange={(e) => set('pricing_basis', e.target.value)}>
-            {(lists?.pricing_basis ?? Object.keys(pricingBasisLabel)).map((b) => <option key={b} value={b}>{pricingBasisLabel[b as PricingBasis] ?? b}</option>)}
+            {(lists?.pricing_basis ?? (['per_person_per_night', 'per_room_per_night', 'per_person_package', 'per_room_package'] as PricingBasis[])).map((b) => <option key={b} value={b}>{pricingText(b as PricingBasis, lang)}</option>)}
           </Select>
         </Field>
-        <Field label="العملة">
+        <Field label={t('rateForm.currency')}>
           <Select value={f.currency} onChange={(e) => set('currency', e.target.value)}>
             {(lists?.currencies ?? ['EGP', 'USD', 'EUR', 'SAR']).map((c) => <option key={c} value={c}>{c}</option>)}
           </Select>
         </Field>
-        <Field label="الانتقالات">
+        <Field label={t('rateForm.transfer')}>
           <Select value={f.transfer_included} onChange={(e) => set('transfer_included', e.target.value)}>
-            {(lists?.transfer_opts ?? ['Included', 'Optional', 'Not Included']).map((t) => <option key={t} value={t}>{transferLabel[t as TransferOpt] ?? t}</option>)}
+            {(lists?.transfer_opts ?? ['Included', 'Optional', 'Not Included']).map((to) => <option key={to} value={to}>{transferText(to as TransferOpt, lang)}</option>)}
           </Select>
         </Field>
-        <Field label="الحالة">
+        <Field label={t('rateForm.status')}>
           <Select value={f.status} onChange={(e) => set('status', e.target.value)}>
-            {(['Draft', 'Ready', 'Archived'] as RateStatus[]).map((s) => <option key={s} value={s}>{rateStatusLabel[s]}</option>)}
+            {(['Draft', 'Ready', 'Archived'] as RateStatus[]).map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
           </Select>
         </Field>
-        <Field label="سياسة الأطفال" className="col-span-2"><Textarea value={f.child_policy} onChange={(e) => set('child_policy', e.target.value)} /></Field>
-        <Field label="ملاحظات الحجز" className="col-span-2"><Textarea value={f.booking_notes} onChange={(e) => set('booking_notes', e.target.value)} /></Field>
+        <Field label={t('rateForm.childPolicy')} className="col-span-2"><Textarea value={f.child_policy} onChange={(e) => set('child_policy', e.target.value)} /></Field>
+        <Field label={t('rateForm.bookingNotes')} className="col-span-2"><Textarea value={f.booking_notes} onChange={(e) => set('booking_notes', e.target.value)} /></Field>
           </div>
         )}
       </div>

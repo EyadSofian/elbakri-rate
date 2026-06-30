@@ -21,14 +21,8 @@ function route_packages(string $method, array $seg, array $body): void
         $rows = fetch_all(
             "SELECT p.*, g.name AS group_name,
                 (SELECT COUNT(*) FROM package_hotels ph WHERE ph.package_id = p.id) AS hotels_count,
-                (SELECT COUNT(*) FROM hotel_rates r
-                    WHERE r.package_id IS NULL
-                    AND EXISTS (SELECT 1 FROM package_hotels ph WHERE ph.package_id = p.id AND ph.hotel_id = r.hotel_id)
-                    AND r.status='Ready' AND $visSql) AS ready_rates_count,
-                (SELECT COUNT(*) FROM hotel_rates r
-                    WHERE r.package_id IS NULL
-                    AND EXISTS (SELECT 1 FROM package_hotels ph WHERE ph.package_id = p.id AND ph.hotel_id = r.hotel_id)
-                    AND $visSql) AS rates_count
+                (SELECT COUNT(*) FROM hotel_rates r WHERE r.package_id = p.id AND r.status='Ready' AND $visSql) AS ready_rates_count,
+                (SELECT COUNT(*) FROM hotel_rates r WHERE r.package_id = p.id AND $visSql) AS rates_count
              FROM packages p
              LEFT JOIN hotel_groups g ON g.id = p.hotel_group_id
              ORDER BY p.package_name",
@@ -56,11 +50,7 @@ function route_packages(string $method, array $seg, array $body): void
             [$id]
         );
         $pkg['rates'] = fetch_all(
-            "SELECT r.*, p.package_name AS package_name
-             FROM hotel_rates r
-             JOIN package_hotels ph ON ph.hotel_id = r.hotel_id AND ph.package_id = ?
-             JOIN packages p ON p.id = ph.package_id
-             WHERE r.package_id IS NULL AND $visSql
+            "SELECT r.* FROM hotel_rates r WHERE r.package_id = ? AND $visSql
              ORDER BY r.hotel_name, r.date_from, r.room_type",
             array_merge([$id], $visParams)
         );

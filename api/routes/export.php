@@ -20,7 +20,7 @@ function route_export(string $method, array $seg, array $body): void
     $cols = ['id', 'hotel_name', 'hotel_group', 'package_name', 'region', 'sub_region', 'category',
         'offer_name', 'season_name', 'date_from', 'date_to', 'room_type', 'meal_plan', 'pricing_basis',
         'currency', 'adult_price', 'child_price', 'child_age_from', 'child_age_to', 'nights', 'days',
-        'child_policy', 'cancellation_policy', 'booking_notes', 'status'];
+        'transfer_included', 'transfer_details', 'child_policy', 'cancellation_policy', 'booking_notes', 'status'];
 
     log_audit('export', 'rate', null, null, ['count' => count($rows)]);
 

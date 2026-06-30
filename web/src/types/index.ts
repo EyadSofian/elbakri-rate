@@ -4,7 +4,7 @@ export type ActiveStatus = 'Active' | 'Inactive'
 export type QuoteStatus = 'draft' | 'ready' | 'sent' | 'archived'
 export type TransferOpt = 'Included' | 'Optional' | 'Not Included'
 export type Currency = 'EGP' | 'USD' | 'EUR' | 'SAR'
-export type MealPlan = 'RO' | 'BB' | 'HB' | 'FB' | 'AI' | 'SAI' | 'UAI'
+export type MealPlan = 'RO' | 'BB' | 'HB' | 'FB' | 'AI' | 'UAI'
 export type PricingBasis =
   | 'per_person_per_night'
   | 'per_room_per_night'

@@ -13,6 +13,14 @@ export function formatPrice(value: string | number | null | undefined, currency?
   return currency ? `${formatted} ${currency}` : formatted
 }
 
+/** Just the formatted amount (no currency) — lets the export show number and currency separately. */
+export function priceNumber(value: string | number | null | undefined): string {
+  if (value === null || value === undefined || value === '') return '—'
+  const n = typeof value === 'string' ? parseFloat(value) : value
+  if (Number.isNaN(n)) return '—'
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(n)
+}
+
 export function formatDate(d: string | null | undefined): string {
   if (!d) return '—'
   const date = new Date(d)
@@ -20,8 +28,8 @@ export function formatDate(d: string | null | undefined): string {
   return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date)
 }
 
-export function formatDateRange(from: string | null, to: string | null): string {
-  if (!from && !to) return 'كل الفترات'
+export function formatDateRange(from: string | null, to: string | null, allLabel = 'كل الفترات'): string {
+  if (!from && !to) return allLabel
   return `${formatDate(from)} — ${formatDate(to)}`
 }
 

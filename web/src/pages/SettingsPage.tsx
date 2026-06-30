@@ -5,51 +5,52 @@ import { useAuth } from '@/context/AuthContext'
 import { PageHeader } from '@/components/ui/misc'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { roleLabel } from '@/lib/labels'
+import { useI18n } from '@/lib/i18n'
 
 export default function SettingsPage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { t } = useI18n()
   const isOps = user && ['admin', 'operations'].includes(user.role)
 
   return (
     <div>
-      <PageHeader title="الإعدادات" subtitle="معلومات الحساب والنظام" />
+      <PageHeader title={t('nav.settings')} subtitle={t('settings.subtitle')} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="card p-5">
-          <h3 className="mb-3 flex items-center gap-2 font-bold text-navy-900"><User className="h-5 w-5 text-navy-500" />الحساب</h3>
+          <h3 className="mb-3 flex items-center gap-2 font-bold text-navy-900"><User className="h-5 w-5 text-navy-500" />{t('settings.account')}</h3>
           <div className="space-y-2 text-sm">
-            <Row label="الاسم" value={user?.full_name} />
-            <Row label="البريد" value={<span dir="ltr" className="nums">{user?.email}</span>} />
-            <Row label="الدور" value={<Badge tone="navy">{user ? roleLabel[user.role] : ''}</Badge>} />
-            <Row label="صلاحية التعديل" value={<Badge tone={user?.can_edit ? 'green' : 'slate'}>{user?.can_edit ? 'نعم' : 'لا'}</Badge>} />
-            <Row label="صلاحية التصدير" value={<Badge tone={user?.can_export ? 'green' : 'slate'}>{user?.can_export ? 'نعم' : 'لا'}</Badge>} />
+            <Row label={t('settings.name')} value={user?.full_name} />
+            <Row label={t('settings.email')} value={<span dir="ltr" className="nums">{user?.email}</span>} />
+            <Row label={t('settings.role')} value={<Badge tone="navy">{user ? t(`role.${user.role}`) : ''}</Badge>} />
+            <Row label={t('settings.canEdit')} value={<Badge tone={user?.can_edit ? 'green' : 'slate'}>{user?.can_edit ? t('settings.yes') : t('settings.no')}</Badge>} />
+            <Row label={t('settings.canExport')} value={<Badge tone={user?.can_export ? 'green' : 'slate'}>{user?.can_export ? t('settings.yes') : t('settings.no')}</Badge>} />
           </div>
           <Button variant="danger" className="mt-4 w-full" onClick={async () => { await logout(); navigate('/auth') }}>
-            <LogOut className="h-4 w-4" />تسجيل الخروج
+            <LogOut className="h-4 w-4" />{t('settings.logout')}
           </Button>
         </div>
 
         <div className="card p-5">
-          <h3 className="mb-3 flex items-center gap-2 font-bold text-navy-900"><Building2 className="h-5 w-5 text-navy-500" />عن النظام</h3>
+          <h3 className="mb-3 flex items-center gap-2 font-bold text-navy-900"><Building2 className="h-5 w-5 text-navy-500" />{t('settings.about')}</h3>
           <div className="space-y-2 text-sm">
-            <Row label="التطبيق" value="ELBAKRI Hotel Rate Hub" />
-            <Row label="الشركة" value="ELBAKRI OVERSEAS FOR TRAVEL" />
-            <Row label="الإصدار" value={<span className="nums">1.0.0</span>} />
-            <Row label="القاعدة" value="MySQL · PHP 8 API" />
+            <Row label={t('settings.app')} value="ELBAKRI Hotel Rate Hub" />
+            <Row label={t('settings.company')} value="ELBAKRI OVERSEAS FOR TRAVEL" />
+            <Row label={t('settings.version')} value={<span className="nums">1.0.0</span>} />
+            <Row label={t('settings.database')} value="MySQL · PHP 8 API" />
           </div>
           <div className="mt-4 space-y-2">
             {isOps && (
-              <Link to="/system-check"><Button variant="outline" className="w-full"><Activity className="h-4 w-4" />فحص النظام</Button></Link>
+              <Link to="/system-check"><Button variant="outline" className="w-full"><Activity className="h-4 w-4" />{t('nav.system')}</Button></Link>
             )}
             {user?.role === 'admin' && (
-              <Link to="/users"><Button variant="outline" className="w-full"><Shield className="h-4 w-4" />إدارة المستخدمين</Button></Link>
+              <Link to="/users"><Button variant="outline" className="w-full"><Shield className="h-4 w-4" />{t('settings.manageUsers')}</Button></Link>
             )}
           </div>
           <div className="mt-4 flex items-start gap-2 rounded-card bg-navy-50 p-3 text-xs text-ink-muted">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
-            دعم اللغة الإنجليزية والواجهة الثنائية قابل للإضافة لاحقًا. النظام مبني RTL بالكامل.
+            {t('settings.bilingualNote')}
           </div>
         </div>
       </div>

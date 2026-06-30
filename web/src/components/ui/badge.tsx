@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { RateStatus, QuoteStatus } from '@/types'
-import { rateStatusLabel, quoteStatusLabel } from '@/lib/labels'
+import { useI18n } from '@/lib/i18n'
 
 export function Badge({ children, className, tone = 'slate' }: { children: ReactNode; className?: string; tone?: string }) {
   const tones: Record<string, string> = {
@@ -21,13 +21,15 @@ export function Badge({ children, className, tone = 'slate' }: { children: React
 }
 
 export function RateStatusBadge({ status }: { status: RateStatus }) {
+  const { t } = useI18n()
   const tone = status === 'Ready' ? 'green' : status === 'Draft' ? 'amber' : 'slate'
-  return <Badge tone={tone}>{rateStatusLabel[status]}</Badge>
+  return <Badge tone={tone}>{t(`status.${status}`)}</Badge>
 }
 
 export function QuoteStatusBadge({ status }: { status: QuoteStatus }) {
+  const { t } = useI18n()
   const tone = status === 'ready' ? 'green' : status === 'sent' ? 'navy' : status === 'archived' ? 'slate' : 'amber'
-  return <Badge tone={tone}>{quoteStatusLabel[status]}</Badge>
+  return <Badge tone={tone}>{t(`quoteStatus.${status}`)}</Badge>
 }
 
 export function Stars({ count }: { count: number | null }) {

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { OfferCard } from '@/components/OfferCard'
 import { useI18n } from '@/lib/i18n'
-import { REGIONS, categoryText, mealLabel, roomLabel } from '@/lib/labels'
+import { REGIONS, mealLabel, roomLabel, categoryText } from '@/lib/labels'
 import type { Rate, MealPlan } from '@/types'
 
 export default function SalesPage() {
@@ -50,8 +50,8 @@ export default function SalesPage() {
 
       <div className="mb-4 flex gap-2">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute inset-y-0 right-3 my-auto h-4 w-4 text-ink-muted" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('sales.searchPlaceholder')} className="pr-9" />
+          <Search className="pointer-events-none absolute inset-y-0 start-3 my-auto h-4 w-4 text-ink-muted" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('sales.searchPlaceholder')} className="ps-9" />
         </div>
         <Button variant={showFilters ? 'subtle' : 'outline'} size="icon" onClick={() => setShowFilters((s) => !s)} aria-label={t('sales.filter')}>
           <SlidersHorizontal className="h-5 w-5" />
@@ -70,7 +70,7 @@ export default function SalesPage() {
           </Select>
           <Select value={meal} onChange={(e) => setMeal(e.target.value)}>
             <option value="">{t('sales.allMeals')}</option>
-            {(['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI'] as MealPlan[]).map((m) => <option key={m} value={m}>{mealLabel(m, lang)}</option>)}
+            {(['RO', 'BB', 'HB', 'FB', 'AI', 'UAI'] as MealPlan[]).map((m) => <option key={m} value={m}>{mealLabel(m, lang)}</option>)}
           </Select>
           <Input type="number" inputMode="decimal" placeholder={t('sales.maxPrice')} value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
           <label className="col-span-2 flex min-h-[44px] items-center gap-2 text-sm sm:col-span-4">
@@ -85,7 +85,7 @@ export default function SalesPage() {
         onChange={setTab}
         tabs={[
           { key: 'hotels', label: t('sales.tabHotels'), count: hotelOffers.length },
-          { key: 'packages', label: t('sales.tabPackages'), count: readyPackages.length },
+          { key: 'packages', label: t('sales.tabPackages'), count: packageOffers.length },
         ]}
       />
 
@@ -96,14 +96,14 @@ export default function SalesPage() {
           <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {readyPackages.map((p) => (
               <Link key={p.id} to={`/sales/packages/${p.id}`} className="card group flex flex-col gap-2 p-4 transition hover:border-gold hover:shadow-soft">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <h3 className="font-bold text-navy-900">{p.package_name}</h3>
                   <Badge tone="gold">{categoryText(p.package_type, lang)}</Badge>
                 </div>
-                {p.region && <span className="inline-flex items-center gap-1 text-xs text-ink-muted"><MapPin className="h-3.5 w-3.5" />{p.region}</span>}
+                {p.region && <span className="inline-flex items-center gap-1 text-xs text-ink-muted"><MapPin className="h-3.5 w-3.5 shrink-0" />{p.region}</span>}
                 <div className="mt-1 flex items-center justify-between border-t border-navy-100 pt-2 text-xs">
-                  <span className="inline-flex items-center gap-1 text-green-600"><CheckCircle2 className="h-3.5 w-3.5" /><span className="nums">{p.ready_rates_count}</span> {t('sales.readyRate')}</span>
-                  <span className="inline-flex items-center gap-1 font-semibold text-navy-700 group-hover:text-gold-dark">{t('sales.proOffer')} <ArrowLeft className="h-3.5 w-3.5" /></span>
+                  <span className="inline-flex items-center gap-1 text-green-600"><CheckCircle2 className="h-3.5 w-3.5 shrink-0" /><span className="nums">{p.ready_rates_count}</span> {t('sales.readyRate')}</span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-navy-700 group-hover:text-gold-dark">{t('sales.proOffer')} <ArrowLeft className="h-3.5 w-3.5 shrink-0 ltr:rotate-180" /></span>
                 </div>
               </Link>
             ))}
