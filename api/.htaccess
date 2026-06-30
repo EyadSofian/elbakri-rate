@@ -1,0 +1,27 @@
+# ELBAKRI Hotel Rate Hub — API front controller routing
+# All /api/* requests are routed to index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /api/
+
+    # Pass Authorization header through (some hosts strip it)
+    RewriteCond %{HTTP:Authorization} ^(.+)$
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
+    # Existing files/dirs are served as-is
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Everything else -> index.php
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Protect sensitive files
+<FilesMatch "^(config\.php|config\.example\.php|.*\.sql)$">
+    Require all denied
+</FilesMatch>
+
+# Default charset
+AddDefaultCharset UTF-8

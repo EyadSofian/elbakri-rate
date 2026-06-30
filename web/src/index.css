@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-surface text-ink antialiased;
+    font-family: 'Cairo', 'Tajawal', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Brand wordmark — geometric sans matching the ELBAKRI logo */
+  .brand-wordmark {
+    font-family: 'Space Grotesk', 'Cairo', system-ui, sans-serif;
+    letter-spacing: 0.01em;
+  }
+
+  /* Numerals stay LTR inside RTL text */
+  .nums {
+    direction: ltr;
+    unicode-bidi: embed;
+    display: inline-block;
+  }
+
+  /* Thin, branded scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #c7d2e4;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #9fb1cf;
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  .input-base {
+    @apply w-full rounded-btn border border-navy-100 bg-white px-3 py-2 text-sm text-ink
+      placeholder:text-ink-muted/60 shadow-sm outline-none transition
+      focus:border-navy-400 focus:ring-2 focus:ring-navy-400/20
+      disabled:cursor-not-allowed disabled:bg-surface-muted;
+  }
+
+  .card {
+    @apply rounded-card border border-navy-100/70 bg-white shadow-card;
+  }
+
+  .label-base {
+    @apply mb-1.5 block text-sm font-semibold text-navy-800;
+  }
+
+  /* Minimum 44px tap targets on touch devices handled per-component */
+}

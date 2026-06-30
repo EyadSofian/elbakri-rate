@@ -1,0 +1,28 @@
+# ---- Backend (PHP) ----
+api/config.php
+api/uploads/*
+!api/uploads/.gitkeep
+api/storage/*
+!api/storage/.gitkeep
+
+# ---- Frontend (Vite/React) ----
+web/node_modules/
+web/dist/
+web/.vite/
+web/tsconfig.tsbuildinfo
+web/vite.config.d.ts
+web/*.local
+web/.env
+web/.env.*
+!web/.env.example
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+*.swp
+
+# ---- Scratch ----
+/tmp/
