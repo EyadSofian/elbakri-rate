@@ -46,11 +46,16 @@ function normalizeError(err: unknown): ApiError {
   return new ApiError('تعذّر الاتصال بالخادم. تأكد من رفع مجلد /api وإعداد config.php.', 0, 'network')
 }
 
-/** Unwraps the backend { data } envelope. */
-async function unwrap<T>(p: Promise<{ data: { data?: T } }>): Promise<T> {
+/** Unwraps the backend { data } envelope. A null payload ({"data":null}) must
+ *  return null (e.g. /auth/me when logged out) — NOT the envelope object. */
+async function unwrap<T>(p: Promise<{ data: unknown }>): Promise<T> {
   try {
     const res = await p
-    return (res.data?.data ?? res.data) as T
+    const body = res.data
+    if (body && typeof body === 'object' && 'data' in (body as Record<string, unknown>)) {
+      return (body as { data: T }).data
+    }
+    return body as T
   } catch (e) {
     throw normalizeError(e)
   }

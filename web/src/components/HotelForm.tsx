@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/inputs'
 import { useToast } from '@/components/ui/toast'
+import { useI18n } from '@/lib/i18n'
 import { PeriodsEditor, newPeriod, periodsToApi, countRecords, type Period } from '@/components/PeriodsEditor'
 import { useHotelGroups, useLists } from '@/lib/hooks'
 import { REGIONS } from '@/lib/labels'
@@ -15,6 +16,7 @@ export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: ()
   const editing = !!hotel
   const toast = useToast()
   const qc = useQueryClient()
+  const { t } = useI18n()
   const { data: groups } = useHotelGroups()
   const { data: lists } = useLists()
 
@@ -62,18 +64,19 @@ export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: ()
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       const createdRates = withPricing ? countRecords(periods) : 0
       toast.success(
-        (editing ? 'تم تحديث الفندق' : 'تم إضافة الفندق') +
-          (createdRates > 0 ? ` وإضافة ${createdRates} سعر` : ''),
+        createdRates > 0
+          ? t(editing ? 'hotelForm.updatedN' : 'hotelForm.addedN', { n: createdRates })
+          : t(editing ? 'hotelForm.updated' : 'hotelForm.added'),
       )
       setWithPricing(false)
       setPeriods([newPeriod()])
       onClose()
     },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : 'تعذّر الحفظ'),
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.save')),
   })
 
   const submit = () => {
-    if (!form.hotel_name.trim()) return toast.error('اسم الفندق مطلوب')
+    if (!form.hotel_name.trim()) return toast.error(t('hotelForm.nameRequired'))
     save.mutate()
   }
 
@@ -85,46 +88,46 @@ export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: ()
       title={
         <span className="flex items-center gap-2">
           <Building2 className="h-5 w-5 text-navy-600" />
-          {editing ? 'تعديل الفندق' : 'إضافة فندق'}
+          {editing ? t('hotelForm.editTitle') : t('hotelForm.addTitle')}
         </span>
       }
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>إلغاء</Button>
-          <Button onClick={submit} loading={save.isPending}>{editing ? 'حفظ التعديلات' : 'حفظ الفندق'}</Button>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button onClick={submit} loading={save.isPending}>{t('common.save')}</Button>
         </>
       }
     >
       <div className="space-y-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="اسم الفندق" required className="sm:col-span-2">
-            <Input value={form.hotel_name} onChange={(e) => set('hotel_name', e.target.value)} placeholder="مثال: Pickalbatros Aqua Park" />
+          <Field label={t('hotelForm.name')} required className="sm:col-span-2">
+            <Input value={form.hotel_name} onChange={(e) => set('hotel_name', e.target.value)} placeholder={t('hotelForm.namePlaceholder')} />
           </Field>
-          <Field label="المجموعة">
+          <Field label={t('hotelForm.group')}>
             <Select value={form.hotel_group_id} onChange={(e) => set('hotel_group_id', e.target.value)}>
-              <option value="">— بدون مجموعة —</option>
+              <option value="">{t('hotelForm.noGroup')}</option>
               {groups?.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
             </Select>
           </Field>
-          <Field label="المنطقة">
+          <Field label={t('hotelForm.region')}>
             <Select value={form.region} onChange={(e) => set('region', e.target.value)}>
-              <option value="">— اختر —</option>
+              <option value="">{t('common.select')}</option>
               {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
             </Select>
           </Field>
-          <Field label="المنطقة الفرعية">
-            <Input value={form.sub_region} onChange={(e) => set('sub_region', e.target.value)} placeholder="مثال: نبق باي" />
+          <Field label={t('hotelForm.subRegion')}>
+            <Input value={form.sub_region} onChange={(e) => set('sub_region', e.target.value)} placeholder={t('hotelForm.subRegionPlaceholder')} />
           </Field>
-          <Field label="عدد النجوم">
+          <Field label={t('hotelForm.stars')}>
             <Select value={form.star_rating} onChange={(e) => set('star_rating', e.target.value)}>
-              <option value="">—</option>
-              {[3, 4, 5].map((s) => <option key={s} value={s}>{s} نجوم</option>)}
+              <option value="">{t('common.dash')}</option>
+              {[3, 4, 5].map((s) => <option key={s} value={s}>{t('hotelForm.starsN', { n: s })}</option>)}
             </Select>
           </Field>
-          <Field label="سياسة الأطفال الافتراضية" className="sm:col-span-2">
-            <Textarea value={form.child_policy_default} onChange={(e) => set('child_policy_default', e.target.value)} placeholder="مثال: طفل حتى 11.99 سنة مجانًا" />
+          <Field label={t('hotelForm.childPolicyDefault')} className="sm:col-span-2">
+            <Textarea value={form.child_policy_default} onChange={(e) => set('child_policy_default', e.target.value)} placeholder={t('hotelForm.childPolicyPlaceholder')} />
           </Field>
-          <Field label="ملاحظات الانتقالات" className="sm:col-span-2">
+          <Field label={t('hotelForm.transferNotes')} className="sm:col-span-2">
             <Textarea value={form.transfer_notes_default} onChange={(e) => set('transfer_notes_default', e.target.value)} />
           </Field>
         </div>
@@ -132,10 +135,8 @@ export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: ()
         <div className="rounded-card border border-navy-100 bg-white p-3">
             <label className="flex cursor-pointer items-center justify-between">
               <div>
-                <div className="text-sm font-bold text-navy-900">إضافة فترات أسعار الآن</div>
-                <div className="text-xs text-ink-muted">
-                  أسعار مستقلة للفندق بدون باكدج. يمكن إضافة أكثر من فترة، وكل فترة لها Double / Triple / Single وغرفة مخصصة.
-                </div>
+                <div className="text-sm font-bold text-navy-900">{t('hotelForm.addPricingNow')}</div>
+                <div className="text-xs text-ink-muted">{t('hotelForm.addPricingHint')}</div>
               </div>
               <input type="checkbox" checked={withPricing} onChange={(e) => setWithPricing(e.target.checked)} className="h-5 w-5 accent-navy-700" />
             </label>
@@ -144,7 +145,7 @@ export function HotelForm({ open, onClose, hotel }: { open: boolean; onClose: ()
               <div className="mt-3 border-t border-navy-100 pt-3">
                 <PeriodsEditor value={periods} onChange={setPeriods} lists={lists} />
                 <p className="mt-2 text-center text-xs font-semibold text-navy-600">
-                  سيتم إنشاء <span className="nums">{countRecords(periods)}</span> سعر
+                  {t('hotelForm.willCreate', { n: countRecords(periods) })}
                 </p>
               </div>
             )}

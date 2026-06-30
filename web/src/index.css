@@ -19,6 +19,12 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Brand wordmark — geometric sans matching the ELBAKRI logo */
+  .brand-wordmark {
+    font-family: 'Space Grotesk', 'Cairo', system-ui, sans-serif;
+    letter-spacing: 0.01em;
+  }
+
   /* Numerals stay LTR inside RTL text */
   .nums {
     direction: ltr;
@@ -60,13 +66,4 @@
   }
 
   /* Minimum 44px tap targets on touch devices handled per-component */
-}
-
-/* Hide elements visually but keep them renderable for html-to-image capture */
-.export-stage {
-  position: fixed;
-  inset-inline-start: -10000px;
-  top: 0;
-  z-index: -1;
-  pointer-events: none;
 }

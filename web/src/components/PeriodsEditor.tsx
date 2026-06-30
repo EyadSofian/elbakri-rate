@@ -1,7 +1,8 @@
 import { Plus, Trash2, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/inputs'
-import { mealPlanLabel, pricingBasisLabel, rateStatusLabel, transferLabel } from '@/lib/labels'
+import { mealLabel, pricingText, transferText, pricingBasisLabel } from '@/lib/labels'
+import { useI18n } from '@/lib/i18n'
 import type { Lists, MealPlan, PricingBasis, Currency, RateStatus, TransferOpt } from '@/types'
 
 export interface Period {
@@ -86,6 +87,7 @@ export function countRecords(periods: Period[]): number {
 }
 
 export function PeriodsEditor({ value, onChange, lists }: { value: Period[]; onChange: (p: Period[]) => void; lists?: Lists }) {
+  const { t, lang } = useI18n()
   const update = (id: string, patch: Partial<Period>) => onChange(value.map((p) => (p.id === id ? { ...p, ...patch } : p)))
   const remove = (id: string) => onChange(value.filter((p) => p.id !== id))
   const duplicate = (p: Period) => onChange([...value, newPeriod({ ...p, id: undefined })])
@@ -100,13 +102,13 @@ export function PeriodsEditor({ value, onChange, lists }: { value: Period[]; onC
       {value.map((p, idx) => (
         <div key={p.id} className="rounded-card border border-navy-100 bg-surface/50 p-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-bold text-navy-800">الفترة {idx + 1}</span>
+            <span className="text-sm font-bold text-navy-800">{t('period.label', { n: idx + 1 })}</span>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => duplicate(p)} className="grid h-8 w-8 place-items-center rounded-btn text-navy-500 hover:bg-navy-50" title="تكرار">
+              <button type="button" onClick={() => duplicate(p)} className="grid h-8 w-8 place-items-center rounded-btn text-navy-500 hover:bg-navy-50" title={t('period.duplicate')}>
                 <Copy className="h-4 w-4" />
               </button>
               {value.length > 1 && (
-                <button type="button" onClick={() => remove(p.id)} className="grid h-8 w-8 place-items-center rounded-btn text-red-500 hover:bg-red-50" title="حذف">
+                <button type="button" onClick={() => remove(p.id)} className="grid h-8 w-8 place-items-center rounded-btn text-red-500 hover:bg-red-50" title={t('period.delete')}>
                   <Trash2 className="h-4 w-4" />
                 </button>
               )}
@@ -114,75 +116,75 @@ export function PeriodsEditor({ value, onChange, lists }: { value: Period[]; onC
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Field label="من تاريخ"><Input type="date" value={p.date_from} onChange={(e) => update(p.id, { date_from: e.target.value })} /></Field>
-            <Field label="إلى تاريخ"><Input type="date" value={p.date_to} onChange={(e) => update(p.id, { date_to: e.target.value })} /></Field>
-            <Field label="الإقامة">
+            <Field label={t('rateForm.dateFrom')}><Input type="date" value={p.date_from} onChange={(e) => update(p.id, { date_from: e.target.value })} /></Field>
+            <Field label={t('rateForm.dateTo')}><Input type="date" value={p.date_to} onChange={(e) => update(p.id, { date_to: e.target.value })} /></Field>
+            <Field label={t('rateForm.meal')}>
               <Select value={p.meal_plan} onChange={(e) => update(p.id, { meal_plan: e.target.value as MealPlan })}>
-                {meals.map((m) => <option key={m} value={m}>{mealPlanLabel[m] ?? m}</option>)}
+                {meals.map((m) => <option key={m} value={m}>{mealLabel(m, lang)}</option>)}
               </Select>
             </Field>
-            <Field label="أساس التسعير">
+            <Field label={t('rateForm.pricingBasis')}>
               <Select value={p.pricing_basis} onChange={(e) => update(p.id, { pricing_basis: e.target.value as PricingBasis })}>
-                {bases.map((b) => <option key={b} value={b}>{pricingBasisLabel[b as PricingBasis] ?? b}</option>)}
+                {bases.map((b) => <option key={b} value={b}>{pricingText(b as PricingBasis, lang)}</option>)}
               </Select>
             </Field>
           </div>
 
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Field label="سعر مزدوجة"><Input type="number" inputMode="decimal" placeholder="0" value={p.double} onChange={(e) => update(p.id, { double: e.target.value })} /></Field>
-            <Field label="سعر ثلاثية"><Input type="number" inputMode="decimal" placeholder="0" value={p.triple} onChange={(e) => update(p.id, { triple: e.target.value })} /></Field>
-            <Field label="سعر فردية"><Input type="number" inputMode="decimal" placeholder="0" value={p.single} onChange={(e) => update(p.id, { single: e.target.value })} /></Field>
+            <Field label={t('period.priceDouble')}><Input type="number" inputMode="decimal" placeholder="0" value={p.double} onChange={(e) => update(p.id, { double: e.target.value })} /></Field>
+            <Field label={t('period.priceTriple')}><Input type="number" inputMode="decimal" placeholder="0" value={p.triple} onChange={(e) => update(p.id, { triple: e.target.value })} /></Field>
+            <Field label={t('period.priceSingle')}><Input type="number" inputMode="decimal" placeholder="0" value={p.single} onChange={(e) => update(p.id, { single: e.target.value })} /></Field>
           </div>
 
           <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Field label="غرفة مخصصة"><Input placeholder="مثال: جناح" value={p.custom_room} onChange={(e) => update(p.id, { custom_room: e.target.value })} /></Field>
-            <Field label="سعرها"><Input type="number" inputMode="decimal" placeholder="0" value={p.custom_price} onChange={(e) => update(p.id, { custom_price: e.target.value })} /></Field>
-            <Field label="العملة">
+            <Field label={t('period.customRoom')}><Input placeholder={t('period.customRoomPlaceholder')} value={p.custom_room} onChange={(e) => update(p.id, { custom_room: e.target.value })} /></Field>
+            <Field label={t('period.customPrice')}><Input type="number" inputMode="decimal" placeholder="0" value={p.custom_price} onChange={(e) => update(p.id, { custom_price: e.target.value })} /></Field>
+            <Field label={t('rateForm.currency')}>
               <Select value={p.currency} onChange={(e) => update(p.id, { currency: e.target.value as Currency })}>
                 {currencies.map((c) => <option key={c} value={c}>{c}</option>)}
               </Select>
             </Field>
-            <Field label="الحالة">
+            <Field label={t('rateForm.status')}>
               <Select value={p.status} onChange={(e) => update(p.id, { status: e.target.value as RateStatus })}>
-                {(['Draft', 'Ready'] as RateStatus[]).map((s) => <option key={s} value={s}>{rateStatusLabel[s]}</option>)}
+                {(['Draft', 'Ready'] as RateStatus[]).map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
               </Select>
             </Field>
           </div>
 
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <Field label="الانتقالات">
+            <Field label={t('rateForm.transfer')}>
               <Select value={p.transfer_included} onChange={(e) => update(p.id, { transfer_included: e.target.value as TransferOpt })}>
-                {transfers.map((t) => <option key={t} value={t}>{transferLabel[t as TransferOpt] ?? t}</option>)}
+                {transfers.map((to) => <option key={to} value={to}>{transferText(to as TransferOpt, lang)}</option>)}
               </Select>
             </Field>
-            <Field label="اسم الموسم (اختياري)"><Input placeholder="مثال: صيف" value={p.season_name} onChange={(e) => update(p.id, { season_name: e.target.value })} /></Field>
+            <Field label={t('period.season')}><Input placeholder={t('period.seasonPlaceholder')} value={p.season_name} onChange={(e) => update(p.id, { season_name: e.target.value })} /></Field>
           </div>
 
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Field label="سياسة الأطفال للفترة">
+            <Field label={t('period.childPolicy')}>
               <Textarea
                 rows={2}
                 value={p.child_policy}
                 onChange={(e) => update(p.id, { child_policy: e.target.value })}
-                placeholder="مثال: الطفل الأول حتى 11.99 سنة مجانا"
+                placeholder={t('period.childPolicyPlaceholder')}
                 className="min-h-[70px]"
               />
             </Field>
-            <Field label="تفاصيل الانتقالات">
+            <Field label={t('period.transferDetails')}>
               <Textarea
                 rows={2}
                 value={p.transfer_details}
                 onChange={(e) => update(p.id, { transfer_details: e.target.value })}
-                placeholder="مثال: ذهاب وعودة 600 ج للفرد"
+                placeholder={t('period.transferDetailsPlaceholder')}
                 className="min-h-[70px]"
               />
             </Field>
-            <Field label="ملاحظات الحجز">
+            <Field label={t('period.bookingNotes')}>
               <Textarea
                 rows={2}
                 value={p.booking_notes}
                 onChange={(e) => update(p.id, { booking_notes: e.target.value })}
-                placeholder="أي شروط أو ملاحظات خاصة بالفترة"
+                placeholder={t('period.bookingNotesPlaceholder')}
                 className="min-h-[70px]"
               />
             </Field>
@@ -192,7 +194,7 @@ export function PeriodsEditor({ value, onChange, lists }: { value: Period[]; onC
 
       <Button type="button" variant="outline" onClick={() => onChange([...value, newPeriod()])} className="w-full">
         <Plus className="h-4 w-4" />
-        إضافة فترة
+        {t('period.add')}
       </Button>
     </div>
   )
