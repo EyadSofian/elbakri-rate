@@ -2,7 +2,7 @@ import { forwardRef, useMemo } from 'react'
 import { Baby, Building2, Bus, CalendarDays, Info, MapPin, Phone, Sparkles, Utensils } from 'lucide-react'
 import { priceNumber, formatDateRange, formatDate } from '@/lib/utils'
 import { translate, type Lang } from '@/lib/i18n'
-import { BrandMark } from '@/components/layout/Logo'
+import { Logo } from '@/components/layout/Logo'
 import { describeOffer, type HotelGroup, type PeriodGroup } from '@/lib/grouping'
 import type { Rate } from '@/types'
 
@@ -102,14 +102,8 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
       {/* ---- Header (transparent logo, no white box) ---- */}
       <div style={{ padding: '40px 52px 24px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <BrandMark size={60} />
-            <div style={{ lineHeight: 1.15 }}>
-              <div style={{ fontFamily: "'Space Grotesk', Cairo, sans-serif", fontSize: 26, fontWeight: 700, letterSpacing: 0.4, color: NAVY }}>ELBAKRI OVERSEAS</div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, letterSpacing: 1, color: MUTED }}>
-                FOR TRAVEL · {lang === 'ar' ? 'للسياحة والسفر' : 'EST. 1982'}
-              </div>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Logo className="h-[76px] max-w-[360px]" />
           </div>
           <div style={{ textAlign: dir === 'rtl' ? 'left' : 'right' }}>
             <div style={{ display: 'inline-block', background: NAVY, color: '#fff', fontSize: 13, fontWeight: 800, letterSpacing: 0.5, padding: '7px 16px', borderRadius: 8, textTransform: 'uppercase' }}>
