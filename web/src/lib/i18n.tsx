@@ -287,11 +287,13 @@ const AR: Record<string, string> = {
 
   // Package detail
   'package.salesView': 'عرض المبيعات',
-  'package.addRates': 'إضافة أسعار',
+  'package.manageHotels': 'إدارة فنادق الباقة',
   'package.noHotels': 'لا توجد فنادق مرتبطة — عدّل الباقة لإضافتها',
+  'package.noHotelsTitle': 'أضف فنادق للباقة',
   'package.ratesByHotel': 'الأسعار حسب الفندق',
-  'package.noRatesInPackage': 'لا توجد أسعار في الباقة',
-  'package.noRatesDesc': 'استخدم مصفوفة الأسعار لإضافة أسعار دفعة واحدة',
+  'package.ratesCount': 'سعر',
+  'package.noRatesInPackage': 'لا توجد أسعار لفنادق هذه الباقة',
+  'package.noRatesDesc': 'أضف الأسعار من صفحة الفندق أو مصفوفة الأسعار، ثم ستظهر هنا تلقائيًا حسب الفنادق المرتبطة بالباقة.',
   'package.copyToHotels': 'نسخ لفنادق',
   'package.archive': 'أرشفة',
   'package.markReady': 'جاهز',
@@ -302,7 +304,6 @@ const AR: Record<string, string> = {
   'package.selectHotelErr': 'اختر فندقًا',
   'package.statusUpdated': 'تم تحديث {n} سعر',
   'package.copied': 'تم نسخ {n} سعر',
-  'package.addRatesTitle': 'إضافة أسعار للباقة',
 
   // Package form
   'pkgForm.editTitle': 'تعديل باقة',
@@ -313,14 +314,12 @@ const AR: Record<string, string> = {
   'pkgForm.region': 'المنطقة',
   'pkgForm.multi': 'متعدد',
   'pkgForm.group': 'المجموعة',
-  'pkgForm.defaultMeal': 'الإقامة الافتراضية',
-  'pkgForm.defaultPricing': 'أساس التسعير الافتراضي',
   'pkgForm.description': 'الوصف',
   'pkgForm.hotels': 'الفنادق المشمولة',
   'pkgForm.searchHotels': 'بحث...',
   'pkgForm.noHotels': 'لا توجد فنادق',
   'pkgForm.nameRequired': 'اسم الباقة مطلوب',
-  'pkgForm.containerNote': 'الباقة عبارة عن حاوية للفنادق فقط. تُضاف الأسعار والتواريخ لكل فندق من صفحة «إضافة أسعار».',
+  'pkgForm.containerNote': 'الباقة عبارة عن حاوية للفنادق فقط. أضف أو احذف الفنادق هنا، أما الأسعار والفترات فتُدار من صفحة الفندق أو مصفوفة الأسعار.',
 
   // Rate form
   'rateForm.editTitle': 'تعديل سعر',
@@ -764,11 +763,13 @@ const EN: Record<string, string> = {
 
   // Package detail
   'package.salesView': 'Sales view',
-  'package.addRates': 'Add rates',
+  'package.manageHotels': 'Manage package hotels',
   'package.noHotels': 'No linked hotels — edit the package to add them',
+  'package.noHotelsTitle': 'Add hotels to the package',
   'package.ratesByHotel': 'Rates by hotel',
-  'package.noRatesInPackage': 'No rates in this package',
-  'package.noRatesDesc': 'Use the rate matrix to add rates in bulk',
+  'package.ratesCount': 'rate(s)',
+  'package.noRatesInPackage': 'No rates for this package hotels',
+  'package.noRatesDesc': 'Add rates from the hotel page or the rate matrix. They will appear here automatically based on the hotels linked to the package.',
   'package.copyToHotels': 'Copy to hotels',
   'package.archive': 'Archive',
   'package.markReady': 'Ready',
@@ -779,7 +780,6 @@ const EN: Record<string, string> = {
   'package.selectHotelErr': 'Select a hotel',
   'package.statusUpdated': '{n} rate(s) updated',
   'package.copied': '{n} rate(s) copied',
-  'package.addRatesTitle': 'Add rates to the package',
 
   // Package form
   'pkgForm.editTitle': 'Edit package',
@@ -790,14 +790,12 @@ const EN: Record<string, string> = {
   'pkgForm.region': 'Region',
   'pkgForm.multi': 'Multiple',
   'pkgForm.group': 'Group',
-  'pkgForm.defaultMeal': 'Default meal plan',
-  'pkgForm.defaultPricing': 'Default pricing basis',
   'pkgForm.description': 'Description',
   'pkgForm.hotels': 'Included hotels',
   'pkgForm.searchHotels': 'Search…',
   'pkgForm.noHotels': 'No hotels',
   'pkgForm.nameRequired': 'Package name is required',
-  'pkgForm.containerNote': 'A package is only a container of hotels. Prices and dates are added per hotel from the “Add rates” page.',
+  'pkgForm.containerNote': 'A package is only a container of hotels. Add or remove hotels here; prices and periods are managed from the hotel page or rate matrix.',
 
   // Rate form
   'rateForm.editTitle': 'Edit rate',

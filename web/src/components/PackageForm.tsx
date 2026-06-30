@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/inputs'
 import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
-import { useHotels, useHotelGroups, useLists } from '@/lib/hooks'
-import { REGIONS, mealPlanLabel, pricingBasisLabel } from '@/lib/labels'
+import { useHotels, useHotelGroups } from '@/lib/hooks'
+import { REGIONS } from '@/lib/labels'
 import { api, ApiError } from '@/lib/api'
 import { cn } from '@/lib/utils'
-import type { Package, MealPlan, PricingBasis } from '@/types'
+import type { Package } from '@/types'
 
 export function PackageForm({ open, onClose, pkg }: { open: boolean; onClose: () => void; pkg?: Package }) {
   const editing = !!pkg
@@ -19,7 +19,6 @@ export function PackageForm({ open, onClose, pkg }: { open: boolean; onClose: ()
   const { t } = useI18n()
   const { data: hotels } = useHotels()
   const { data: groups } = useHotelGroups()
-  const { data: lists } = useLists()
 
   const [f, setF] = useState({
     package_name: pkg?.package_name ?? '',
@@ -27,8 +26,6 @@ export function PackageForm({ open, onClose, pkg }: { open: boolean; onClose: ()
     region: pkg?.region ?? '',
     hotel_group_id: pkg?.hotel_group_id ? String(pkg.hotel_group_id) : '',
     description: pkg?.description ?? '',
-    default_meal_plan: (pkg?.default_meal_plan ?? '') as MealPlan | '',
-    default_pricing_basis: (pkg?.default_pricing_basis ?? '') as PricingBasis | '',
     status: pkg?.status ?? 'Active',
   })
   const [selected, setSelected] = useState<number[]>(pkg?.hotels?.map((h) => h.id) ?? [])
@@ -43,8 +40,8 @@ export function PackageForm({ open, onClose, pkg }: { open: boolean; onClose: ()
       const payload = {
         ...f,
         hotel_group_id: f.hotel_group_id ? Number(f.hotel_group_id) : null,
-        default_meal_plan: f.default_meal_plan || null,
-        default_pricing_basis: f.default_pricing_basis || null,
+        default_meal_plan: null,
+        default_pricing_basis: null,
         hotel_ids: selected,
       }
       return editing
@@ -93,18 +90,6 @@ export function PackageForm({ open, onClose, pkg }: { open: boolean; onClose: ()
           <Select value={f.hotel_group_id} onChange={(e) => set('hotel_group_id', e.target.value)}>
             <option value="">{t('common.noneOption')}</option>
             {groups?.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </Select>
-        </Field>
-        <Field label={t('pkgForm.defaultMeal')}>
-          <Select value={f.default_meal_plan} onChange={(e) => set('default_meal_plan', e.target.value)}>
-            <option value="">{t('common.dash')}</option>
-            {(lists?.meal_plans ?? ['RO', 'BB', 'HB', 'FB', 'AI', 'UAI']).map((m) => <option key={m} value={m}>{mealPlanLabel[m] ?? m}</option>)}
-          </Select>
-        </Field>
-        <Field label={t('pkgForm.defaultPricing')} className="sm:col-span-2">
-          <Select value={f.default_pricing_basis} onChange={(e) => set('default_pricing_basis', e.target.value)}>
-            <option value="">{t('common.dash')}</option>
-            {(lists?.pricing_basis ?? Object.keys(pricingBasisLabel)).map((b) => <option key={b} value={b}>{pricingBasisLabel[b as PricingBasis] ?? b}</option>)}
           </Select>
         </Field>
         <Field label={t('pkgForm.description')} className="sm:col-span-2"><Textarea value={f.description} onChange={(e) => set('description', e.target.value)} /></Field>

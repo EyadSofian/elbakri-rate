@@ -1,48 +1,32 @@
 import { useMemo, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Pencil, Plus, CheckCircle2, Archive, Copy, Eye, Building2, ImageDown } from 'lucide-react'
-import { api, ApiError } from '@/lib/api'
+import { Link, useParams } from 'react-router-dom'
+import { ArrowRight, Building2, CalendarDays, Eye, ImageDown, Pencil, Utensils } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '@/lib/api'
 import { PageLoader, ErrorState, EmptyState } from '@/components/ui/misc'
 import { SectionTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Modal } from '@/components/ui/modal'
+import { Badge, RateStatusBadge } from '@/components/ui/badge'
 import { Checkbox, Input } from '@/components/ui/inputs'
-import { RateRow } from '@/components/RateRow'
 import { PackageForm } from '@/components/PackageForm'
 import { ExportActions } from '@/components/export/ExportActions'
-import { useHotels } from '@/lib/hooks'
-import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
-import { categoryText } from '@/lib/labels'
-import { cn } from '@/lib/utils'
-import type { Package, Rate } from '@/types'
+import { categoryText, mealLabel, roomLabel } from '@/lib/labels'
+import { formatDateRange, formatPrice } from '@/lib/utils'
+import { groupRates } from '@/lib/grouping'
+import type { Package } from '@/types'
 
 export default function PackageDetailPage() {
   const { id } = useParams()
-  const qc = useQueryClient()
-  const toast = useToast()
   const { t, lang } = useI18n()
-  const { data: pkg, isLoading, error } = useQuery({ queryKey: ['package', id], queryFn: () => api.get<Package>(`/packages/${id}`) })
-  const { data: allHotels } = useHotels()
+  const { data: pkg, isLoading, error } = useQuery({
+    queryKey: ['package', id],
+    queryFn: () => api.get<Package>(`/packages/${id}`),
+  })
 
   const [edit, setEdit] = useState(false)
   const [selected, setSelected] = useState<number[]>([])
-  const [copyOpen, setCopyOpen] = useState(false)
-  const [targets, setTargets] = useState<number[]>([])
   const [clientName, setClientName] = useState('')
-
-  // Group by hotel_id (NOT hotel_name) so a hotel appears once.
-  const grouped = useMemo(() => {
-    const map = new Map<number | string, { name: string; rates: Rate[] }>()
-    for (const r of pkg?.rates ?? []) {
-      const key = r.hotel_id ?? `name:${r.hotel_name ?? ''}`
-      if (!map.has(key)) map.set(key, { name: r.hotel_name ?? `#${r.hotel_id}`, rates: [] })
-      map.get(key)!.rates.push(r)
-    }
-    return Array.from(map.values())
-  }, [pkg])
 
   const readyRates = useMemo(() => (pkg?.rates ?? []).filter((r) => r.status === 'Ready'), [pkg])
   const exportRates = useMemo(() => {
@@ -50,18 +34,7 @@ export default function PackageDetailPage() {
     if (selected.length > 0) return pool.filter((r) => selected.includes(r.id))
     return readyRates
   }, [pkg, readyRates, selected])
-
-  const bulkStatus = useMutation({
-    mutationFn: (status: string) => api.post('/rates/bulk-status', { ids: selected, status }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['package', id] }); toast.success(t('package.statusUpdated', { n: selected.length })); setSelected([]) },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.update')),
-  })
-
-  const copyRates = useMutation({
-    mutationFn: () => api.post('/rates/copy', { rate_ids: selected, target_hotel_ids: targets }),
-    onSuccess: (res: unknown) => { qc.invalidateQueries({ queryKey: ['package', id] }); toast.success(t('package.copied', { n: (res as { rates_created: number }).rates_created })); setCopyOpen(false); setSelected([]); setTargets([]) },
-    onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.copy')),
-  })
+  const groups = useMemo(() => groupRates(pkg?.rates ?? []), [pkg])
 
   if (isLoading) return <PageLoader />
   if (error || !pkg) return <ErrorState message={(error as Error)?.message ?? t('err.notFound')} />
@@ -86,11 +59,15 @@ export default function PackageDetailPage() {
             {pkg.description && <p className="mt-2 text-sm text-ink">{pkg.description}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link to={`/sales/packages/${pkg.id}`}><Button variant="outline" size="sm"><Eye className="h-4 w-4" />{t('package.salesView')}</Button></Link>
-            <Button variant="outline" size="sm" onClick={() => setEdit(true)}><Pencil className="h-4 w-4" />{t('common.edit')}</Button>
-            <Link to={`/packages/${pkg.id}/add-rates`}><Button size="sm"><Plus className="h-4 w-4" />{t('package.addRates')}</Button></Link>
+            <Link to={`/sales/packages/${pkg.id}`}>
+              <Button variant="outline" size="sm"><Eye className="h-4 w-4" />{t('package.salesView')}</Button>
+            </Link>
+            <Button variant="outline" size="sm" onClick={() => setEdit(true)}>
+              <Pencil className="h-4 w-4" />{t('package.manageHotels')}
+            </Button>
           </div>
         </div>
+
         <div className="mt-3 flex flex-wrap gap-1.5 border-t border-navy-100 pt-3">
           {(pkg.hotels ?? []).map((h) => (
             <Link key={h.id} to={`/hotels/${h.id}`} className="inline-flex items-center gap-1 rounded-full bg-navy-50 px-2.5 py-1 text-xs font-semibold text-navy-700 hover:bg-navy-100">
@@ -111,12 +88,7 @@ export default function PackageDetailPage() {
             <p className="mt-1 text-sm text-ink-muted">{t('pkg.exportHint')}</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Input
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder={t('sales.clientName')}
-              className="sm:w-56"
-            />
+            <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder={t('sales.clientName')} className="sm:w-56" />
             <ExportActions
               size="sm"
               items={exportRates}
@@ -138,55 +110,69 @@ export default function PackageDetailPage() {
       </div>
 
       <SectionTitle>{t('package.ratesByHotel')}</SectionTitle>
-      {grouped.length === 0 ? (
-        <EmptyState title={t('package.noRatesInPackage')} description={t('package.noRatesDesc')} action={<Link to={`/packages/${pkg.id}/add-rates`}><Button><Plus className="h-4 w-4" />{t('package.addRates')}</Button></Link>} />
+      {(pkg.hotels ?? []).length === 0 ? (
+        <EmptyState
+          icon={<Building2 className="h-7 w-7" />}
+          title={t('package.noHotelsTitle')}
+          description={t('package.noHotels')}
+          action={<Button onClick={() => setEdit(true)}><Pencil className="h-4 w-4" />{t('package.manageHotels')}</Button>}
+        />
+      ) : groups.length === 0 ? (
+        <EmptyState
+          icon={<Building2 className="h-7 w-7" />}
+          title={t('package.noRatesInPackage')}
+          description={t('package.noRatesDesc')}
+        />
       ) : (
-        <div className="space-y-4 pb-20">
-          {grouped.map((g) => (
-            <div key={g.name}>
-              <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-navy-800"><Building2 className="h-4 w-4 text-navy-500" />{g.name}</h3>
-              <div className="space-y-2">
-                {g.rates.map((r) => (
-                  <RateRow key={r.id} rate={r} selectable selected={selected.includes(r.id)} onSelect={() => toggle(r.id)} />
+        <div className="space-y-5 pb-20">
+          {groups.map((hotel) => (
+            <section key={hotel.hotelId ?? hotel.name} className="overflow-hidden rounded-card border border-navy-100 bg-white">
+              <div className="flex flex-wrap items-start justify-between gap-3 bg-navy-900 px-4 py-3 text-white">
+                <div>
+                  <h3 className="flex items-center gap-2 text-base font-extrabold">
+                    <Building2 className="h-4 w-4" />{hotel.name}
+                  </h3>
+                  {(hotel.region || hotel.subRegion) && (
+                    <p className="mt-1 text-xs font-semibold text-white/70">{[hotel.region, hotel.subRegion].filter(Boolean).join(' · ')}</p>
+                  )}
+                </div>
+                <Badge tone="gold"><span className="nums">{hotel.periods.reduce((sum, p) => sum + p.rates.length, 0)}</span> {t('package.ratesCount')}</Badge>
+              </div>
+
+              <div className="space-y-3 p-3">
+                {hotel.periods.map((period) => (
+                  <div key={period.key} className="overflow-hidden rounded-card border border-navy-100">
+                    <div className="flex flex-wrap items-center justify-between gap-2 bg-navy-50 px-3 py-2">
+                      <span className="nums inline-flex items-center gap-1.5 text-sm font-bold text-navy-900">
+                        <CalendarDays className="h-4 w-4 text-navy-500" />{formatDateRange(period.from, period.to, t('export.allPeriods'))}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-700">
+                        <Utensils className="h-4 w-4 text-navy-500" />{mealLabel(period.meal, lang)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {period.rates.map((rate) => (
+                        <div key={rate.id} className="flex min-h-[76px] items-center gap-3 rounded-card border border-navy-100 bg-surface px-3 py-2 transition hover:border-navy-200">
+                          <Checkbox checked={selected.includes(rate.id)} onChange={() => toggle(rate.id)} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-xs font-bold text-navy-600">{roomLabel(rate.room_type, lang)}</span>
+                              <RateStatusBadge status={rate.status} />
+                            </div>
+                            <div className="nums mt-1 text-lg font-extrabold text-navy-900">{formatPrice(rate.adult_price, rate.currency)}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
+            </section>
           ))}
-        </div>
-      )}
-
-      {/* Bulk action bar */}
-      {selected.length > 0 && (
-        <div className="fixed inset-x-0 bottom-16 z-20 px-3 lg:bottom-4">
-          <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-2 rounded-card border border-navy-200 bg-white p-2.5 shadow-pop">
-            <span className="px-2 text-sm font-bold text-navy-900"><span className="nums">{selected.length}</span> {t('package.selected')}</span>
-            <div className="flex flex-wrap gap-1.5">
-              <Button size="sm" variant="subtle" onClick={() => setSelected([])}>{t('common.cancel')}</Button>
-              <Button size="sm" variant="outline" onClick={() => setCopyOpen(true)}><Copy className="h-4 w-4" />{t('package.copyToHotels')}</Button>
-              <Button size="sm" variant="outline" onClick={() => bulkStatus.mutate('Archived')} loading={bulkStatus.isPending}><Archive className="h-4 w-4" />{t('package.archive')}</Button>
-              <Button size="sm" onClick={() => bulkStatus.mutate('Ready')} loading={bulkStatus.isPending}><CheckCircle2 className="h-4 w-4" />{t('package.markReady')}</Button>
-            </div>
-          </div>
         </div>
       )}
 
       <PackageForm open={edit} onClose={() => setEdit(false)} pkg={pkg} />
-
-      <Modal
-        open={copyOpen}
-        onClose={() => setCopyOpen(false)}
-        title={t('package.copyTitle')}
-        footer={<><Button variant="ghost" onClick={() => setCopyOpen(false)}>{t('common.cancel')}</Button><Button onClick={() => targets.length ? copyRates.mutate() : toast.error(t('package.selectHotelErr'))} loading={copyRates.isPending}>{t('package.copyBtn', { a: selected.length, b: targets.length })}</Button></>}
-      >
-        <p className="mb-3 text-sm text-ink-muted">{t('package.copyDesc', { n: selected.length })}</p>
-        <div className="max-h-64 space-y-1 overflow-y-auto">
-          {(allHotels ?? []).map((h) => (
-            <div key={h.id} className={cn('rounded-btn px-2', targets.includes(h.id) && 'bg-navy-50')}>
-              <Checkbox checked={targets.includes(h.id)} onChange={(c) => setTargets((tg) => (c ? [...tg, h.id] : tg.filter((x) => x !== h.id)))} label={`${h.hotel_name} · ${h.region ?? ''}`} />
-            </div>
-          ))}
-        </div>
-      </Modal>
     </div>
   )
 }

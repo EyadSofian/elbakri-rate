@@ -12,7 +12,6 @@ import HotelDetailPage from '@/pages/HotelDetailPage'
 import HotelGroupsPage from '@/pages/HotelGroupsPage'
 import PackagesPage from '@/pages/PackagesPage'
 import PackageDetailPage from '@/pages/PackageDetailPage'
-import PackageAddRatesPage from '@/pages/PackageAddRatesPage'
 import RateMatrixPage from '@/pages/RateMatrixPage'
 import SalesPage from '@/pages/SalesPage'
 import SalesPackagePage from '@/pages/SalesPackagePage'
@@ -48,7 +47,6 @@ export default function App() {
                 <Route path="/hotel-groups" element={<RoleRoute roles={[...ops]}><HotelGroupsPage /></RoleRoute>} />
                 <Route path="/packages" element={<RoleRoute roles={[...ops]}><PackagesPage /></RoleRoute>} />
                 <Route path="/packages/:id" element={<RoleRoute roles={[...ops]}><PackageDetailPage /></RoleRoute>} />
-                <Route path="/packages/:id/add-rates" element={<RoleRoute roles={[...ops]}><PackageAddRatesPage /></RoleRoute>} />
                 <Route path="/rates/matrix/new" element={<RoleRoute roles={[...ops]}><RateMatrixPage /></RoleRoute>} />
                 <Route path="/sales" element={<SalesPage />} />
                 <Route path="/sales/packages/:id" element={<SalesPackagePage />} />
