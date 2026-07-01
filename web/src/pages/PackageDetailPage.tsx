@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, Building2, CalendarDays, Eye, ImageDown, Pencil, Trash2, Utensils } from 'lucide-react'
+import { ArrowRight, Building2, CalendarDays, CheckCircle2, Eye, ImageDown, Pencil, Trash2, Utensils } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from '@/lib/api'
 import { PageLoader, ErrorState, EmptyState } from '@/components/ui/misc'
@@ -65,6 +65,16 @@ export default function PackageDetailPage() {
       navigate('/packages')
     },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.delete')),
+  })
+
+  const markReady = useMutation({
+    mutationFn: (ids: number[]) => api.post<{ updated: number }>('/rates/bulk-status', { ids, status: 'Ready' }),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['package', id] })
+      qc.invalidateQueries({ queryKey: ['packages'] })
+      toast.success(t('bulk.periodReadyDone', { n: res.updated }))
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.update')),
   })
 
   if (isLoading) return <PageLoader />
@@ -179,12 +189,24 @@ export default function PackageDetailPage() {
                 {hotel.periods.map((period) => (
                   <div key={period.key} className="overflow-hidden rounded-card border border-navy-100">
                     <div className="flex flex-wrap items-center justify-between gap-2 bg-navy-50 px-3 py-2">
-                      <span className="nums inline-flex items-center gap-1.5 text-sm font-bold text-navy-900">
-                        <CalendarDays className="h-4 w-4 text-navy-500" />{formatDateRange(period.from, period.to, t('export.allPeriods'))}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-700">
-                        <Utensils className="h-4 w-4 text-navy-500" />{mealLabel(period.meal, lang)}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="nums inline-flex items-center gap-1.5 text-sm font-bold text-navy-900">
+                          <CalendarDays className="h-4 w-4 text-navy-500" />{formatDateRange(period.from, period.to, t('export.allPeriods'))}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-700">
+                          <Utensils className="h-4 w-4 text-navy-500" />{mealLabel(period.meal, lang)}
+                        </span>
+                      </div>
+                      {period.rates.some((rate) => rate.status !== 'Ready') && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => markReady.mutate(period.rates.filter((rate) => rate.status !== 'Ready').map((rate) => rate.id))}
+                          loading={markReady.isPending}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />{t('bulk.markPeriodReady')}
+                        </Button>
+                      )}
                     </div>
                     <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 lg:grid-cols-3">
                       {period.rates.map((rate) => (

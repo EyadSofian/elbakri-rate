@@ -207,6 +207,10 @@ const AR: Record<string, string> = {
   'err.export': 'تعذّر التصدير',
   'err.notFound': 'غير موجود',
 
+  // Bulk actions
+  'bulk.markPeriodReady': 'اجعل الفترة جاهزة',
+  'bulk.periodReadyDone': 'تم تجهيز {n} سعر في الفترة',
+
   // Confirm dialog
   'confirm.title': 'تأكيد',
 
@@ -672,6 +676,10 @@ const EN: Record<string, string> = {
   'err.copy': 'Could not copy',
   'err.export': 'Export failed',
   'err.notFound': 'Not found',
+
+  // Bulk actions
+  'bulk.markPeriodReady': 'Mark period ready',
+  'bulk.periodReadyDone': '{n} rate(s) marked ready',
 
   // Confirm dialog
   'confirm.title': 'Confirm',

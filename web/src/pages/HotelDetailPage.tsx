@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Baby, Bus, Pencil, Plus, CalendarPlus, MapPin, Package, Tag, Trash2, Building2, CalendarDays, Utensils, ImageDown } from 'lucide-react'
+import { ArrowRight, Baby, Bus, Pencil, Plus, CalendarPlus, MapPin, Package, Tag, Trash2, Building2, CalendarDays, Utensils, ImageDown, CheckCircle2 } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
 import { PageLoader, ErrorState, Tabs, EmptyState } from '@/components/ui/misc'
 import { SectionTitle } from '@/components/ui/card'
@@ -53,6 +53,16 @@ export default function HotelDetailPage() {
     mutationFn: (rid: number) => api.del(`/rates/${rid}`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['hotel', id] }); toast.success(t('hotel.rateDeleted')); setDelRate(null) },
     onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.delete')),
+  })
+
+  const markReady = useMutation({
+    mutationFn: (ids: number[]) => api.post<{ updated: number }>('/rates/bulk-status', { ids, status: 'Ready' }),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['hotel', id] })
+      qc.invalidateQueries({ queryKey: ['hotels'] })
+      toast.success(t('bulk.periodReadyDone', { n: res.updated }))
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.update')),
   })
 
   const removeHotel = useMutation({
@@ -172,15 +182,25 @@ export default function HotelDetailPage() {
             h.periods.map((p) => (
               <div key={p.key} className="overflow-hidden rounded-card border border-navy-100 bg-white">
                 <div className="flex flex-wrap items-center justify-between gap-2 bg-navy-50 px-3 py-2">
-                  <span className="nums inline-flex items-center gap-1.5 text-sm font-bold text-navy-900">
-                    <CalendarDays className="h-4 w-4 text-navy-500" />{formatDateRange(p.from, p.to, t('export.allPeriods'))}
-                  </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="nums inline-flex items-center gap-1.5 text-sm font-bold text-navy-900">
+                      <CalendarDays className="h-4 w-4 text-navy-500" />{formatDateRange(p.from, p.to, t('export.allPeriods'))}
+                    </span>
                     <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-700">
                       <Utensils className="h-4 w-4 text-navy-500" />{mealLabel(p.meal, lang)}
                     </span>
                     {p.rates[0] && <Badge tone={p.rates[0].status === 'Ready' ? 'green' : p.rates[0].status === 'Draft' ? 'amber' : 'slate'}>{t(`status.${p.rates[0].status}`)}</Badge>}
                   </div>
+                  {p.rates.some((r) => r.status !== 'Ready') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => markReady.mutate(p.rates.filter((r) => r.status !== 'Ready').map((r) => r.id))}
+                      loading={markReady.isPending}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />{t('bulk.markPeriodReady')}
+                    </Button>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 lg:grid-cols-3">
                   {p.rates.map((r) => (
