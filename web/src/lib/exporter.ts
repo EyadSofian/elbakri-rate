@@ -8,16 +8,14 @@ import { ClientOfferExport, type OfferExportData } from '@/components/export/Cli
 /**
  * High-resolution, poster-grade export pipeline.
  *
- * - Fixed poster width (1080px) → predictable, professional layout.
- * - pixelRatio 2.5 → ~2700px-wide raster, sharp text on retina + print.
- * - Web fonts (Cairo / Space Grotesk) are loaded BEFORE capture so glyphs are
- *   never rasterized with a fallback face (a common cause of "blurry"/wrong text).
- * - The offer is rendered imperatively into a detached off-screen host, so any
- *   caller (a quote, a package, a single hotel card) can export without keeping
- *   a live React subtree mounted. No transform:scale() is used anywhere — that
- *   would soften the raster.
+ * - Fixed poster width (1080px) gives predictable, professional layout.
+ * - pixelRatio 2.5 gives a sharp raster for retina screens and print.
+ * - Web fonts are loaded before capture so glyphs are not rasterized with a fallback.
+ * - Oversized multi-hotel offers are re-rendered into an A3-ratio canvas with a
+ *   calculated fit scale, then captured at high pixel ratio for readability.
  */
 const EXPORT_WIDTH = 1080
+const A3_PAGE_HEIGHT = Math.round(EXPORT_WIDTH * Math.SQRT2)
 const PIXEL_RATIO = 2.5
 
 const FONT_SPECS = [
@@ -115,11 +113,23 @@ async function captureOffer(data: OfferExportData): Promise<Capture> {
     await ensureFonts()
     await nextFrames()
 
-    const node = host.firstElementChild as HTMLElement | null
+    let node = host.firstElementChild as HTMLElement | null
     if (!node) throw new Error('export node failed to render')
 
-    const cssW = node.offsetWidth || EXPORT_WIDTH
-    const cssH = node.offsetHeight
+    const initialW = node.offsetWidth || EXPORT_WIDTH
+    const initialH = node.offsetHeight
+    if (initialH > A3_PAGE_HEIGHT) {
+      const fitScale = Math.min(1, A3_PAGE_HEIGHT / initialH)
+      root.render(createElement(ClientOfferExport, { ...data, fitScale, pageHeight: A3_PAGE_HEIGHT }))
+      await nextFrames()
+      await ensureFonts()
+      await nextFrames()
+      node = host.firstElementChild as HTMLElement | null
+      if (!node) throw new Error('export node failed to render')
+    }
+
+    const cssW = node.offsetWidth || initialW
+    const cssH = node.offsetHeight || A3_PAGE_HEIGHT
     const opts = {
       cacheBust: true,
       backgroundColor: '#ffffff',
