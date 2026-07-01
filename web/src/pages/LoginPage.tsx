@@ -56,7 +56,7 @@ export default function LoginPage() {
     }
   }
 
-  const features = [t('nav.hotels'), t('nav.packages'), t('nav.matrix'), 'PNG / PDF', 'WhatsApp']
+  const features = [t('nav.hotels'), t('nav.packages'), t('nav.sales'), 'PNG / PDF', 'WhatsApp']
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2" dir={dir}>

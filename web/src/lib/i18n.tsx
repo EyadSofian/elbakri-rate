@@ -47,7 +47,6 @@ const AR: Record<string, string> = {
   'nav.hotels': 'الفنادق',
   'nav.groups': 'مجموعات الفنادق',
   'nav.packages': 'الباقات',
-  'nav.matrix': 'مصفوفة الأسعار',
   'nav.sales': 'عروض المبيعات',
   'nav.quotes': 'عروض الأسعار',
   'nav.users': 'المستخدمون',
@@ -226,7 +225,6 @@ const AR: Record<string, string> = {
   'hotels.subtitle': 'إدارة الفنادق المستقلة وأسعارها',
   'hotels.add': 'إضافة فندق',
   'hotels.searchPlaceholder': 'ابحث عن فندق...',
-  'hotels.matrix': 'مصفوفة أسعار',
   'hotels.emptyTitle': 'لا توجد فنادق',
   'hotels.emptyDesc': 'ابدأ بإضافة أول فندق ومعه فترات الأسعار',
   'hotels.ratesLabel': 'الأسعار',
@@ -298,7 +296,7 @@ const AR: Record<string, string> = {
   'package.ratesByHotel': 'الأسعار حسب الفندق',
   'package.ratesCount': 'سعر',
   'package.noRatesInPackage': 'لا توجد أسعار لفنادق هذه الباقة',
-  'package.noRatesDesc': 'أضف الأسعار من صفحة الفندق أو مصفوفة الأسعار، ثم ستظهر هنا تلقائيًا حسب الفنادق المرتبطة بالباقة.',
+  'package.noRatesDesc': 'أضف الأسعار من صفحة الفندق، ثم ستظهر هنا تلقائيًا حسب الفنادق المرتبطة بالباقة.',
   'package.copyToHotels': 'نسخ لفنادق',
   'package.archive': 'أرشفة',
   'package.markReady': 'جاهز',
@@ -326,7 +324,7 @@ const AR: Record<string, string> = {
   'pkgForm.searchHotels': 'بحث...',
   'pkgForm.noHotels': 'لا توجد فنادق',
   'pkgForm.nameRequired': 'اسم الباقة مطلوب',
-  'pkgForm.containerNote': 'الباقة عبارة عن حاوية للفنادق فقط. أضف أو احذف الفنادق هنا، أما الأسعار والفترات فتُدار من صفحة الفندق أو مصفوفة الأسعار.',
+  'pkgForm.containerNote': 'الباقة عبارة عن حاوية للفنادق فقط. أضف أو احذف الفنادق هنا، أما الأسعار والفترات فتُدار من صفحة الفندق.',
 
   // Rate form
   'rateForm.editTitle': 'تعديل سعر',
@@ -402,20 +400,6 @@ const AR: Record<string, string> = {
   'hotelForm.updatedN': 'تم تحديث الفندق وإضافة {n} سعر',
   'hotelForm.addedN': 'تم إضافة الفندق وإضافة {n} سعر',
 
-  // Matrix builder
-  'matrix.package': 'الباقة (اختياري)',
-  'matrix.noPackage': '— بدون باقة (أسعار مستقلة) —',
-  'matrix.packageHint': 'عند اختيار باقة، تُعرض فنادقها فقط. بدون باقة تظهر كل الفنادق لأسعار مستقلة.',
-  'matrix.hotels': 'الفنادق',
-  'matrix.noHotels': 'لا توجد فنادق متاحة',
-  'matrix.periodsRooms': 'الفترات وأنواع الغرف',
-  'matrix.overwrite': 'استبدال المكرر',
-  'matrix.expected': 'المتوقع',
-  'matrix.save': 'حفظ الأسعار',
-  'matrix.created': 'تم إنشاء {n} سعر بنجاح',
-  'matrix.selectHotel': 'اختر فندقًا واحدًا على الأقل',
-  'matrix.atLeastOne': 'أدخل سعرًا واحدًا على الأقل',
-
   // Dashboard
   'dash.title': 'لوحة التحكم',
   'dash.subtitle': 'نظرة عامة على الأسعار والفنادق والباقات',
@@ -433,9 +417,6 @@ const AR: Record<string, string> = {
   'dash.emptyDesc': 'أضف سعرًا أو فندقًا للبدء',
   'dash.exportCsv': 'تصدير CSV',
 
-  // Rate matrix page
-  'matrixPage.subtitle': 'أضف أسعارًا متعددة دفعة واحدة: فنادق × فترات × أنواع غرف',
-
   // Hotel groups
   'groups.subtitle': 'السلاسل والمجموعات الفندقية',
   'groups.add': 'إضافة مجموعة',
@@ -449,6 +430,8 @@ const AR: Record<string, string> = {
   'groups.region': 'المنطقة',
   'groups.notes': 'ملاحظات',
   'groups.nameRequired': 'الاسم مطلوب',
+  'groups.deleteQ': 'هل تريد حذف مجموعة الفنادق {name}؟',
+  'groups.deleted': 'تم حذف مجموعة الفنادق',
 
   // Settings
   'settings.subtitle': 'معلومات الحساب والنظام',
@@ -544,7 +527,6 @@ const EN: Record<string, string> = {
   'nav.hotels': 'Hotels',
   'nav.groups': 'Hotel Groups',
   'nav.packages': 'Packages',
-  'nav.matrix': 'Rate Matrix',
   'nav.sales': 'Sales Offers',
   'nav.quotes': 'Quotes',
   'nav.users': 'Users',
@@ -709,7 +691,6 @@ const EN: Record<string, string> = {
   'hotels.subtitle': 'Manage standalone hotels and their rates',
   'hotels.add': 'Add hotel',
   'hotels.searchPlaceholder': 'Search for a hotel…',
-  'hotels.matrix': 'Rate matrix',
   'hotels.emptyTitle': 'No hotels',
   'hotels.emptyDesc': 'Start by adding your first hotel together with its rate periods',
   'hotels.ratesLabel': 'Rates',
@@ -781,7 +762,7 @@ const EN: Record<string, string> = {
   'package.ratesByHotel': 'Rates by hotel',
   'package.ratesCount': 'rate(s)',
   'package.noRatesInPackage': 'No rates for this package hotels',
-  'package.noRatesDesc': 'Add rates from the hotel page or the rate matrix. They will appear here automatically based on the hotels linked to the package.',
+  'package.noRatesDesc': 'Add rates from the hotel page. They will appear here automatically based on the hotels linked to the package.',
   'package.copyToHotels': 'Copy to hotels',
   'package.archive': 'Archive',
   'package.markReady': 'Ready',
@@ -809,7 +790,7 @@ const EN: Record<string, string> = {
   'pkgForm.searchHotels': 'Search…',
   'pkgForm.noHotels': 'No hotels',
   'pkgForm.nameRequired': 'Package name is required',
-  'pkgForm.containerNote': 'A package is only a container of hotels. Add or remove hotels here; prices and periods are managed from the hotel page or rate matrix.',
+  'pkgForm.containerNote': 'A package is only a container of hotels. Add or remove hotels here; prices and periods are managed from the hotel page.',
 
   // Rate form
   'rateForm.editTitle': 'Edit rate',
@@ -885,20 +866,6 @@ const EN: Record<string, string> = {
   'hotelForm.updatedN': 'Hotel updated and {n} rates added',
   'hotelForm.addedN': 'Hotel added and {n} rates added',
 
-  // Matrix builder
-  'matrix.package': 'Package (optional)',
-  'matrix.noPackage': '— No package (standalone rates) —',
-  'matrix.packageHint': 'Choosing a package shows only its hotels. With no package, all hotels appear for standalone rates.',
-  'matrix.hotels': 'Hotels',
-  'matrix.noHotels': 'No hotels available',
-  'matrix.periodsRooms': 'Periods & room types',
-  'matrix.overwrite': 'Overwrite duplicates',
-  'matrix.expected': 'Expected',
-  'matrix.save': 'Save rates',
-  'matrix.created': '{n} rates created successfully',
-  'matrix.selectHotel': 'Select at least one hotel',
-  'matrix.atLeastOne': 'Enter at least one price',
-
   // Dashboard
   'dash.title': 'Dashboard',
   'dash.subtitle': 'Overview of rates, hotels and packages',
@@ -916,9 +883,6 @@ const EN: Record<string, string> = {
   'dash.emptyDesc': 'Add a rate or a hotel to get started',
   'dash.exportCsv': 'Export CSV',
 
-  // Rate matrix page
-  'matrixPage.subtitle': 'Add many rates at once: hotels × periods × room types',
-
   // Hotel groups
   'groups.subtitle': 'Hotel chains and groups',
   'groups.add': 'Add group',
@@ -932,6 +896,8 @@ const EN: Record<string, string> = {
   'groups.region': 'Region',
   'groups.notes': 'Notes',
   'groups.nameRequired': 'Name is required',
+  'groups.deleteQ': 'Delete hotel group {name}?',
+  'groups.deleted': 'Hotel group deleted',
 
   // Settings
   'settings.subtitle': 'Account and system information',

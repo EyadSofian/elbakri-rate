@@ -101,11 +101,11 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
     >
       {/* ---- Header (transparent logo, no white box) ---- */}
       <div style={{ padding: '40px 52px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24 }}>
+        <div style={{ direction: 'ltr', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <Logo className="h-[76px] max-w-[360px]" />
           </div>
-          <div style={{ textAlign: dir === 'rtl' ? 'left' : 'right' }}>
+          <div style={{ direction: dir, textAlign: dir === 'rtl' ? 'right' : 'left' }}>
             <div style={{ display: 'inline-block', background: NAVY, color: '#fff', fontSize: 13, fontWeight: 800, letterSpacing: 0.5, padding: '7px 16px', borderRadius: 8, textTransform: 'uppercase' }}>
               {t('export.heading')}
             </div>

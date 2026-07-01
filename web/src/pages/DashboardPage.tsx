@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Tag, CheckCircle2, FileEdit, Archive, Building2, Package, Plus, Grid3x3, Upload, Download } from 'lucide-react'
+import { Tag, CheckCircle2, FileEdit, Archive, Building2, Package, Plus, Upload, Download } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useHotels, usePackages } from '@/lib/hooks'
 import { useAuth } from '@/context/AuthContext'
@@ -73,7 +73,6 @@ export default function DashboardPage() {
         <Button size="sm" onClick={() => setAddHotel(true)}><Plus className="h-4 w-4" />{t('hotels.add')}</Button>
         <Link to="/packages"><Button size="sm" variant="outline"><Package className="h-4 w-4" />{t('dash.addPackage')}</Button></Link>
         <Button size="sm" variant="outline" onClick={() => setAddRate(true)}><Tag className="h-4 w-4" />{t('hotel.addRate')}</Button>
-        <Link to="/rates/matrix/new"><Button size="sm" variant="outline"><Grid3x3 className="h-4 w-4" />{t('hotels.matrix')}</Button></Link>
         <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" />{t('common.import')}</Button>
         {canExport && <Button size="sm" variant="ghost" onClick={exportCsv}><Download className="h-4 w-4" />{t('dash.exportCsv')}</Button>}
       </div>

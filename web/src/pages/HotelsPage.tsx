@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Plus, Search, SlidersHorizontal, Building2, Upload, Grid3x3, MapPin, ImageDown } from 'lucide-react'
+import { Plus, Search, SlidersHorizontal, Building2, Upload, MapPin, ImageDown } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useHotels, useHotelGroups } from '@/lib/hooks'
 import { PageHeader, EmptyState, PageLoader, ErrorState } from '@/components/ui/misc'
@@ -47,7 +47,6 @@ export default function HotelsPage() {
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" />{t('common.import')}</Button>
-            <Link to="/rates/matrix/new"><Button variant="outline" size="sm"><Grid3x3 className="h-4 w-4" />{t('hotels.matrix')}</Button></Link>
             <Button size="sm" onClick={() => setAddOpen(true)}><Plus className="h-4 w-4" />{t('hotels.add')}</Button>
           </>
         }
