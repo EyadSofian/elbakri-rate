@@ -28,6 +28,7 @@ export interface CurrentUser {
   role: Role
   can_edit: boolean
   can_export: boolean
+  nav_tabs: string[] | null
   rules: AccessRule[]
 }
 
@@ -113,6 +114,10 @@ export interface Rate {
   status: RateStatus
   source_type: string
   updated_at?: string
+  hotel_description?: string | null
+  hotel_facilities?: string | null
+  hotel_child_policy_default?: string | null
+  hotel_transfer_notes_default?: string | null
 }
 
 export interface QuoteItem extends Rate {

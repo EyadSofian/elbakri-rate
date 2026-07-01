@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password_hash` VARCHAR(255) NOT NULL,
   `role`          ENUM('admin','operations','sales','viewer') NOT NULL DEFAULT 'viewer',
   `is_active`     TINYINT(1) NOT NULL DEFAULT 1,
+  `nav_tabs`      TEXT NULL, -- JSON array of allowed sidebar tab keys; NULL = default by role
   `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

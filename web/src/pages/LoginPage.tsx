@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { LogIn } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { homeForRole } from '@/lib/nav'
+import { homeForUser } from '@/lib/nav'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/inputs'
 import { Logo } from '@/components/layout/Logo'
@@ -41,7 +41,7 @@ export default function LoginPage() {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<Form>({ resolver: zodResolver(schema) })
 
   useEffect(() => {
-    if (user) navigate(homeForRole(user.role), { replace: true })
+    if (user) navigate(homeForUser(user), { replace: true })
   }, [user, navigate])
 
   const onSubmit = async (data: Form) => {

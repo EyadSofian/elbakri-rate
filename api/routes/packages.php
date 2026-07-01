@@ -57,9 +57,10 @@ function route_packages(string $method, array $seg, array $body): void
             [$id]
         );
         $pkg['rates'] = fetch_all(
-            "SELECT DISTINCT r.*
+            "SELECT DISTINCT r.*, " . rate_hotel_info_select('h') . "
              FROM package_hotels ph
              JOIN hotel_rates r ON r.hotel_id = ph.hotel_id
+             LEFT JOIN hotels h ON h.id = r.hotel_id
              WHERE ph.package_id = ? AND $visSql
              ORDER BY r.hotel_name, r.date_from, r.room_type",
             array_merge([$id], $visParams)

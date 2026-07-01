@@ -10,7 +10,7 @@ import {
   Settings,
   type LucideIcon,
 } from 'lucide-react'
-import type { Role } from '@/types'
+import type { CurrentUser, Role } from '@/types'
 
 export interface NavItem {
   key: string
@@ -37,7 +37,22 @@ export function navForRole(role: Role): NavItem[] {
   return NAV_ITEMS.filter((i) => i.roles.includes(role))
 }
 
+export function navForUser(user: CurrentUser): NavItem[] {
+  const roleItems = navForRole(user.role)
+  if (!user.nav_tabs || user.nav_tabs.length === 0) return roleItems
+  const allowed = new Set(user.nav_tabs)
+  return roleItems.filter((i) => allowed.has(i.key))
+}
+
+export function canAccessNavKey(user: CurrentUser, key: string): boolean {
+  return navForUser(user).some((i) => i.key === key)
+}
+
 export function homeForRole(role: Role): string {
   if (role === 'sales' || role === 'viewer') return '/sales'
   return '/dashboard'
+}
+
+export function homeForUser(user: CurrentUser): string {
+  return navForUser(user)[0]?.path ?? homeForRole(user.role)
 }

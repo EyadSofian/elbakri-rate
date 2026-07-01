@@ -77,3 +77,24 @@ function insert_id(): int
 {
     return (int) db()->lastInsertId();
 }
+
+function db_column_exists(string $table, string $column): bool
+{
+    $row = fetch_one(
+        'SELECT COUNT(*) c
+           FROM INFORMATION_SCHEMA.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+        [$table, $column]
+    );
+    return (int)($row['c'] ?? 0) > 0;
+}
+
+function ensure_user_nav_tabs_column(): void
+{
+    static $done = false;
+    if ($done) return;
+    $done = true;
+    if (!db_column_exists('users', 'nav_tabs')) {
+        q('ALTER TABLE users ADD COLUMN nav_tabs TEXT NULL AFTER is_active');
+    }
+}

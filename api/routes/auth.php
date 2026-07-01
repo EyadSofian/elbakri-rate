@@ -30,6 +30,7 @@ function route_auth(string $method, array $seg, array $body): void
             'role'       => $u['role'],
             'can_edit'   => can_edit_data($u),
             'can_export' => can_export($u),
+            'nav_tabs'   => normalize_nav_tabs($u['nav_tabs'] ?? null),
             'rules'      => $rules,
         ]);
     }

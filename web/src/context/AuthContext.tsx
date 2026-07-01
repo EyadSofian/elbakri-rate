@@ -11,6 +11,7 @@ interface AuthCtx {
   hasRole: (...roles: Role[]) => boolean
   canEdit: boolean
   canExport: boolean
+  canAccessTab: (key: string) => boolean
 }
 
 const Ctx = createContext<AuthCtx | null>(null)
@@ -57,6 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hasRole: (...roles) => !!user && roles.includes(user.role),
     canEdit: !!user?.can_edit,
     canExport: !!user?.can_export,
+    canAccessTab: (key) => {
+      if (!user?.nav_tabs || user.nav_tabs.length === 0) return true
+      return user.nav_tabs.includes(key)
+    },
   }
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

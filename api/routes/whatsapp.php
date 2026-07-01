@@ -187,7 +187,10 @@ function route_whatsapp(string $method, array $seg, array $body): void
             if (!$quote) fail('عرض السعر غير موجود.', 404, 'not_found');
             if (!can_access_quote($user, $quote)) fail('لا تملك صلاحية لهذا العرض.', 403, 'forbidden');
             $items = fetch_all(
-                'SELECT r.*, qi.custom_note FROM quote_items qi JOIN hotel_rates r ON r.id = qi.hotel_rate_id
+                'SELECT r.*, qi.custom_note, ' . rate_hotel_info_select('h') . '
+                 FROM quote_items qi
+                 JOIN hotel_rates r ON r.id = qi.hotel_rate_id
+                 LEFT JOIN hotels h ON h.id = r.hotel_id
                  WHERE qi.quote_id = ? ORDER BY qi.sort_order, qi.id',
                 [$quote['id']]
             );
@@ -198,7 +201,13 @@ function route_whatsapp(string $method, array $seg, array $body): void
             if (empty($ids)) fail('لا توجد أسعار.', 422, 'validation');
             [$visSql, $visParams] = rates_visibility($user, 'r');
             $place = implode(',', array_fill(0, count($ids), '?'));
-            $items = fetch_all("SELECT r.* FROM hotel_rates r WHERE r.id IN ($place) AND $visSql", array_merge($ids, $visParams));
+            $items = fetch_all(
+                "SELECT r.*, " . rate_hotel_info_select('h') . "
+                 FROM hotel_rates r
+                 LEFT JOIN hotels h ON h.id = r.hotel_id
+                 WHERE r.id IN ($place) AND $visSql",
+                array_merge($ids, $visParams)
+            );
             $title = v_str($body['title'] ?? null, 190);
             $notes = v_str($body['notes'] ?? null);
         } else {

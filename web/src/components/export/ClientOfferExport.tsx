@@ -55,6 +55,29 @@ function hotelNameSize(name: string): number {
   return 28
 }
 
+function cleanText(v: string | null | undefined): string | null {
+  const s = (v ?? '').trim()
+  return s === '' ? null : s
+}
+
+function infoFromRates(group: HotelGroup): HotelInfo | undefined {
+  const rates = group.periods.flatMap((p) => p.rates)
+  const first = rates.find(
+    (r) =>
+      cleanText(r.hotel_description) ||
+      cleanText(r.hotel_child_policy_default) ||
+      cleanText(r.hotel_transfer_notes_default) ||
+      cleanText(r.hotel_facilities),
+  )
+  if (!first) return undefined
+  return {
+    description: cleanText(first.hotel_description),
+    childPolicyDefault: cleanText(first.hotel_child_policy_default),
+    transferNotesDefault: cleanText(first.hotel_transfer_notes_default),
+    facilities: cleanText(first.hotel_facilities),
+  }
+}
+
 /**
  * Fixed-width branded offer captured by html-to-image at high resolution.
  * Rendered off-viewport, portrait-first, content-driven height, fully bilingual
@@ -158,7 +181,7 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
             allPeriods={allPeriods}
             showHeader={!headlineIsHotel}
             showPackageBadge={isPackageOffer && !!h.packageName}
-            info={h.hotelId != null ? hotelInfo?.[h.hotelId] : undefined}
+            info={(h.hotelId != null ? hotelInfo?.[h.hotelId] : undefined) ?? infoFromRates(h)}
             compact={compact}
           />
         ))}
