@@ -118,7 +118,11 @@ function rates_visibility(array $user, string $alias = 'r'): array
                 $params[]  = $r['scope_id'];
                 break;
             case 'package':
-                $scopeOr[] = "$alias.package_id = ?";
+                $scopeOr[] = "($alias.package_id = ? OR EXISTS (
+                    SELECT 1 FROM package_hotels ph_scope
+                    WHERE ph_scope.package_id = ? AND ph_scope.hotel_id = $alias.hotel_id
+                ))";
+                $params[]  = $r['scope_id'];
                 $params[]  = $r['scope_id'];
                 break;
         }

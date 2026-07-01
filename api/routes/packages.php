@@ -21,6 +21,10 @@ function route_packages(string $method, array $seg, array $body): void
         $rows = fetch_all(
             "SELECT p.*, g.name AS group_name,
                 (SELECT COUNT(*) FROM package_hotels ph WHERE ph.package_id = p.id) AS hotels_count,
+                (SELECT COUNT(DISTINCT ph.hotel_id)
+                   FROM package_hotels ph
+                   JOIN hotel_rates r ON r.hotel_id = ph.hotel_id
+                  WHERE ph.package_id = p.id AND $visSql) AS visible_hotels_count,
                 (SELECT COUNT(DISTINCT r.id)
                    FROM package_hotels ph
                    JOIN hotel_rates r ON r.hotel_id = ph.hotel_id
@@ -28,14 +32,23 @@ function route_packages(string $method, array $seg, array $body): void
                 (SELECT COUNT(DISTINCT r.id)
                    FROM package_hotels ph
                    JOIN hotel_rates r ON r.hotel_id = ph.hotel_id
+                  WHERE ph.package_id = p.id AND r.status='Draft' AND $visSql) AS draft_rates_count,
+                (SELECT COUNT(DISTINCT r.id)
+                   FROM package_hotels ph
+                   JOIN hotel_rates r ON r.hotel_id = ph.hotel_id
                   WHERE ph.package_id = p.id AND $visSql) AS rates_count
              FROM packages p
              LEFT JOIN hotel_groups g ON g.id = p.hotel_group_id
              ORDER BY p.package_name",
-            array_merge($visParams, $visParams)
+            array_merge($visParams, $visParams, $visParams, $visParams)
         );
         if (!is_privileged($user)) {
             $rows = array_values(array_filter($rows, fn($r) => (int)$r['ready_rates_count'] > 0));
+            foreach ($rows as &$row) {
+                $row['hotels_count'] = (int)$row['visible_hotels_count'];
+                unset($row['visible_hotels_count']);
+            }
+            unset($row);
         }
         ok($rows);
     }
@@ -49,13 +62,26 @@ function route_packages(string $method, array $seg, array $body): void
         if (!$pkg) fail('الباقة غير موجودة.', 404, 'not_found');
 
         [$visSql, $visParams] = rates_visibility($user, 'r');
-        $pkg['hotels'] = fetch_all(
-            'SELECT h.id, h.hotel_name, h.region, h.sub_region, h.star_rating, h.status,
-                    h.description, h.facilities, h.child_policy_default, h.transfer_notes_default
-             FROM package_hotels ph JOIN hotels h ON h.id = ph.hotel_id
-             WHERE ph.package_id = ? ORDER BY h.hotel_name',
-            [$id]
-        );
+        if (is_privileged($user)) {
+            $pkg['hotels'] = fetch_all(
+                'SELECT h.id, h.hotel_name, h.region, h.sub_region, h.star_rating, h.status,
+                        h.description, h.facilities, h.child_policy_default, h.transfer_notes_default
+                 FROM package_hotels ph JOIN hotels h ON h.id = ph.hotel_id
+                 WHERE ph.package_id = ? ORDER BY h.hotel_name',
+                [$id]
+            );
+        } else {
+            $pkg['hotels'] = fetch_all(
+                "SELECT DISTINCT h.id, h.hotel_name, h.region, h.sub_region, h.star_rating, h.status,
+                        h.description, h.facilities, h.child_policy_default, h.transfer_notes_default
+                 FROM package_hotels ph
+                 JOIN hotels h ON h.id = ph.hotel_id
+                 JOIN hotel_rates r ON r.hotel_id = h.id
+                 WHERE ph.package_id = ? AND $visSql
+                 ORDER BY h.hotel_name",
+                array_merge([$id], $visParams)
+            );
+        }
         $pkg['rates'] = fetch_all(
             "SELECT DISTINCT r.*, " . rate_hotel_info_select('h') . "
              FROM package_hotels ph
@@ -65,6 +91,9 @@ function route_packages(string $method, array $seg, array $body): void
              ORDER BY r.hotel_name, r.date_from, r.room_type",
             array_merge([$id], $visParams)
         );
+        if (!is_privileged($user) && empty($pkg['rates'])) {
+            fail('الباقة غير متاحة ضمن نطاق صلاحياتك.', 404, 'not_found');
+        }
         ok($pkg);
     }
 

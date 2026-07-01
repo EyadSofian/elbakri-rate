@@ -15,6 +15,7 @@ import { PeriodsEditor, newPeriod, periodsToApi, countRecords, type Period } fro
 import { useLists } from '@/lib/hooks'
 import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
+import { useAuth } from '@/context/AuthContext'
 import { formatPrice, formatDateRange } from '@/lib/utils'
 import { mealLabel, roomLabel } from '@/lib/labels'
 import { groupRates } from '@/lib/grouping'
@@ -26,6 +27,7 @@ export default function HotelDetailPage() {
   const qc = useQueryClient()
   const toast = useToast()
   const { t, lang } = useI18n()
+  const { canEdit, canExport } = useAuth()
   const { data: lists } = useLists()
   const { data: hotel, isLoading, error } = useQuery({ queryKey: ['hotel', id], queryFn: () => api.get<Hotel>(`/hotels/${id}`) })
 
@@ -78,6 +80,7 @@ export default function HotelDetailPage() {
   const independent = hotel?.independent_rates ?? []
   const pkgRates = hotel?.package_rates ?? []
   const allRates = useMemo(() => [...independent, ...pkgRates], [independent, pkgRates])
+  const readyRates = useMemo(() => allRates.filter((r) => r.status === 'Ready'), [allRates])
   const list = tab === 'independent' ? independent : pkgRates
   const grouped = useMemo(() => groupRates(list), [list])
 
@@ -125,15 +128,20 @@ export default function HotelDetailPage() {
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setEditHotel(true)}><Pencil className="h-4 w-4" />{t('common.edit')}</Button>
-            <Button variant="outline" size="sm" onClick={() => setPeriodsOpen(true)}><CalendarPlus className="h-4 w-4" />{t('hotel.periods')}</Button>
-            <Button size="sm" onClick={() => setAddRate(true)}><Plus className="h-4 w-4" />{t('hotel.addRate')}</Button>
-            <Button variant="danger" size="sm" onClick={() => setDelHotel(true)}><Trash2 className="h-4 w-4" />{t('common.delete')}</Button>
+            {canEdit && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setEditHotel(true)}><Pencil className="h-4 w-4" />{t('common.edit')}</Button>
+                <Button variant="outline" size="sm" onClick={() => setPeriodsOpen(true)}><CalendarPlus className="h-4 w-4" />{t('hotel.periods')}</Button>
+                <Button size="sm" onClick={() => setAddRate(true)}><Plus className="h-4 w-4" />{t('hotel.addRate')}</Button>
+                <Button variant="danger" size="sm" onClick={() => setDelHotel(true)}><Trash2 className="h-4 w-4" />{t('common.delete')}</Button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Export all of this hotel's rates (grouped) */}
+      {/* Export this hotel's ready rates (grouped) */}
+      {canExport && (
       <div className="card mb-5 flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-base font-extrabold text-navy-900">
@@ -144,12 +152,13 @@ export default function HotelDetailPage() {
         <ExportActions
           size="sm"
           mode="hotel"
-          items={allRates}
+          items={readyRates}
           subtitle={[hotel.region, hotel.sub_region].filter(Boolean).join(' · ') || null}
           hotelInfo={hotelInfo}
           fileBase={`elbakri-${hotel.hotel_name}`}
         />
       </div>
+      )}
 
       <Tabs
         active={tab}
@@ -175,7 +184,7 @@ export default function HotelDetailPage() {
           </div>
         )
       ) : list.length === 0 ? (
-        <EmptyState icon={<Tag className="h-7 w-7" />} title={t('hotel.noRates')} description={t('hotel.noRatesDesc')} action={<Button onClick={() => setAddRate(true)}><Plus className="h-4 w-4" />{t('hotel.addRate')}</Button>} />
+        <EmptyState icon={<Tag className="h-7 w-7" />} title={t('hotel.noRates')} description={t('hotel.noRatesDesc')} action={canEdit ? <Button onClick={() => setAddRate(true)}><Plus className="h-4 w-4" />{t('hotel.addRate')}</Button> : undefined} />
       ) : (
         <div className="space-y-3">
           {grouped.map((h) =>
@@ -191,7 +200,7 @@ export default function HotelDetailPage() {
                     </span>
                     {p.rates[0] && <Badge tone={p.rates[0].status === 'Ready' ? 'green' : p.rates[0].status === 'Draft' ? 'amber' : 'slate'}>{t(`status.${p.rates[0].status}`)}</Badge>}
                   </div>
-                  {p.rates.some((r) => r.status !== 'Ready') && (
+                  {canEdit && p.rates.some((r) => r.status !== 'Ready') && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -209,14 +218,16 @@ export default function HotelDetailPage() {
                         <div className="text-xs font-bold text-navy-600">{roomLabel(r.room_type, lang)}</div>
                         <div className="nums text-base font-extrabold text-navy-900">{formatPrice(r.adult_price, r.currency)}</div>
                       </div>
-                      <div className="flex shrink-0 items-center gap-1">
-                        <button onClick={() => setEditRate(r)} className="grid h-8 w-8 place-items-center rounded-btn text-navy-500 hover:bg-navy-100" aria-label={t('common.edit')}>
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => setDelRate(r)} className="grid h-8 w-8 place-items-center rounded-btn text-red-500 hover:bg-red-50" aria-label={t('common.delete')}>
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                      {canEdit && (
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button onClick={() => setEditRate(r)} className="grid h-8 w-8 place-items-center rounded-btn text-navy-500 hover:bg-navy-100" aria-label={t('common.edit')}>
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => setDelRate(r)} className="grid h-8 w-8 place-items-center rounded-btn text-red-500 hover:bg-red-50" aria-label={t('common.delete')}>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -226,11 +237,15 @@ export default function HotelDetailPage() {
         </div>
       )}
 
-      <HotelForm open={editHotel} onClose={() => setEditHotel(false)} hotel={hotel} />
-      <RateForm open={addRate} onClose={() => setAddRate(false)} fixedHotelId={hotel.id} />
-      {editRate && <RateForm open onClose={() => setEditRate(null)} rate={editRate} />}
+      {canEdit && (
+        <>
+          <HotelForm open={editHotel} onClose={() => setEditHotel(false)} hotel={hotel} />
+          <RateForm open={addRate} onClose={() => setAddRate(false)} fixedHotelId={hotel.id} />
+          {editRate && <RateForm open onClose={() => setEditRate(null)} rate={editRate} />}
+        </>
+      )}
 
-      <Modal
+      {canEdit && <Modal
         open={periodsOpen}
         onClose={() => setPeriodsOpen(false)}
         size="xl"
@@ -244,7 +259,7 @@ export default function HotelDetailPage() {
       >
         <SectionTitle>{t('hotel.periodsSection')}</SectionTitle>
         <PeriodsEditor value={periods} onChange={setPeriods} lists={lists} />
-      </Modal>
+      </Modal>}
 
       <ConfirmDialog
         open={!!delRate}

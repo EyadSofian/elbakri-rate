@@ -22,10 +22,10 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { key: 'dashboard', labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'operations'], mobile: true },
-  { key: 'hotels', labelKey: 'nav.hotels', path: '/hotels', icon: Building2, roles: ['admin', 'operations'], mobile: true },
-  { key: 'groups', labelKey: 'nav.groups', path: '/hotel-groups', icon: Boxes, roles: ['admin', 'operations'], mobile: false },
-  { key: 'packages', labelKey: 'nav.packages', path: '/packages', icon: Package, roles: ['admin', 'operations'], mobile: true },
+  { key: 'dashboard', labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'operations', 'sales'], mobile: true },
+  { key: 'hotels', labelKey: 'nav.hotels', path: '/hotels', icon: Building2, roles: ['admin', 'operations', 'sales'], mobile: true },
+  { key: 'groups', labelKey: 'nav.groups', path: '/hotel-groups', icon: Boxes, roles: ['admin', 'operations', 'sales'], mobile: false },
+  { key: 'packages', labelKey: 'nav.packages', path: '/packages', icon: Package, roles: ['admin', 'operations', 'sales'], mobile: true },
   { key: 'sales', labelKey: 'nav.sales', path: '/sales', icon: Tags, roles: ['admin', 'operations', 'sales', 'viewer'], mobile: true },
   { key: 'quotes', labelKey: 'nav.quotes', path: '/quotes', icon: FileText, roles: ['admin', 'operations', 'sales'], mobile: true },
   { key: 'users', labelKey: 'nav.users', path: '/users', icon: Users, roles: ['admin'], mobile: false },

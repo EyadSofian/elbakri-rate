@@ -28,6 +28,7 @@ function RootRedirect() {
 }
 
 const ops = ['admin', 'operations'] as const
+const opsSales = ['admin', 'operations', 'sales'] as const
 
 export default function App() {
   return (
@@ -40,12 +41,12 @@ export default function App() {
             <AppShell>
               <Routes>
                 <Route path="/" element={<RootRedirect />} />
-                <Route path="/dashboard" element={<RoleRoute roles={[...ops]} navKey="dashboard"><DashboardPage /></RoleRoute>} />
-                <Route path="/hotels" element={<RoleRoute roles={[...ops]} navKey="hotels"><HotelsPage /></RoleRoute>} />
-                <Route path="/hotels/:id" element={<RoleRoute roles={[...ops]} navKey="hotels"><HotelDetailPage /></RoleRoute>} />
-                <Route path="/hotel-groups" element={<RoleRoute roles={[...ops]} navKey="groups"><HotelGroupsPage /></RoleRoute>} />
-                <Route path="/packages" element={<RoleRoute roles={[...ops]} navKey="packages"><PackagesPage /></RoleRoute>} />
-                <Route path="/packages/:id" element={<RoleRoute roles={[...ops]} navKey="packages"><PackageDetailPage /></RoleRoute>} />
+                <Route path="/dashboard" element={<RoleRoute roles={[...opsSales]} navKey="dashboard"><DashboardPage /></RoleRoute>} />
+                <Route path="/hotels" element={<RoleRoute roles={[...opsSales]} navKey="hotels"><HotelsPage /></RoleRoute>} />
+                <Route path="/hotels/:id" element={<RoleRoute roles={[...opsSales]} navKey="hotels"><HotelDetailPage /></RoleRoute>} />
+                <Route path="/hotel-groups" element={<RoleRoute roles={[...opsSales]} navKey="groups"><HotelGroupsPage /></RoleRoute>} />
+                <Route path="/packages" element={<RoleRoute roles={[...opsSales]} navKey="packages"><PackagesPage /></RoleRoute>} />
+                <Route path="/packages/:id" element={<RoleRoute roles={[...opsSales]} navKey="packages"><PackageDetailPage /></RoleRoute>} />
                 <Route path="/sales" element={<RoleRoute roles={['admin', 'operations', 'sales', 'viewer']} navKey="sales"><SalesPage /></RoleRoute>} />
                 <Route path="/sales/packages/:id" element={<RoleRoute roles={['admin', 'operations', 'sales', 'viewer']} navKey="sales"><SalesPackagePage /></RoleRoute>} />
                 <Route path="/quotes" element={<RoleRoute roles={['admin', 'operations', 'sales']} navKey="quotes"><QuotesPage /></RoleRoute>} />

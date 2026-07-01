@@ -12,6 +12,7 @@ import { PackageForm } from '@/components/PackageForm'
 import { ExportActions } from '@/components/export/ExportActions'
 import { ConfirmDialog } from '@/components/ui/modal'
 import { useToast } from '@/components/ui/toast'
+import { useAuth } from '@/context/AuthContext'
 import { useI18n } from '@/lib/i18n'
 import { categoryText, mealLabel, roomLabel } from '@/lib/labels'
 import { formatDateRange, formatPrice } from '@/lib/utils'
@@ -24,6 +25,7 @@ export default function PackageDetailPage() {
   const qc = useQueryClient()
   const toast = useToast()
   const { t, lang } = useI18n()
+  const { canEdit, canExport } = useAuth()
   const { data: pkg, isLoading, error } = useQuery({
     queryKey: ['package', id],
     queryFn: () => api.get<Package>(`/packages/${id}`),
@@ -36,7 +38,7 @@ export default function PackageDetailPage() {
 
   const readyRates = useMemo(() => (pkg?.rates ?? []).filter((r) => r.status === 'Ready'), [pkg])
   const exportRates = useMemo(() => {
-    const pool = pkg?.rates ?? []
+    const pool = (pkg?.rates ?? []).filter((r) => r.status === 'Ready')
     if (selected.length > 0) return pool.filter((r) => selected.includes(r.id))
     return readyRates
   }, [pkg, readyRates, selected])
@@ -103,12 +105,16 @@ export default function PackageDetailPage() {
             <Link to={`/sales/packages/${pkg.id}`}>
               <Button variant="outline" size="sm"><Eye className="h-4 w-4" />{t('package.salesView')}</Button>
             </Link>
-            <Button variant="outline" size="sm" onClick={() => setEdit(true)}>
-              <Pencil className="h-4 w-4" />{t('package.manageHotels')}
-            </Button>
-            <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="h-4 w-4" />{t('common.delete')}
-            </Button>
+            {canEdit && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setEdit(true)}>
+                  <Pencil className="h-4 w-4" />{t('package.manageHotels')}
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+                  <Trash2 className="h-4 w-4" />{t('common.delete')}
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -122,6 +128,7 @@ export default function PackageDetailPage() {
         </div>
       </div>
 
+      {canExport && (
       <div className="card mb-5 p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
@@ -154,6 +161,7 @@ export default function PackageDetailPage() {
           </span>
         </div>
       </div>
+      )}
 
       <SectionTitle>{t('package.ratesByHotel')}</SectionTitle>
       {(pkg.hotels ?? []).length === 0 ? (
@@ -161,7 +169,7 @@ export default function PackageDetailPage() {
           icon={<Building2 className="h-7 w-7" />}
           title={t('package.noHotelsTitle')}
           description={t('package.noHotels')}
-          action={<Button onClick={() => setEdit(true)}><Pencil className="h-4 w-4" />{t('package.manageHotels')}</Button>}
+          action={canEdit ? <Button onClick={() => setEdit(true)}><Pencil className="h-4 w-4" />{t('package.manageHotels')}</Button> : undefined}
         />
       ) : groups.length === 0 ? (
         <EmptyState
@@ -197,7 +205,7 @@ export default function PackageDetailPage() {
                           <Utensils className="h-4 w-4 text-navy-500" />{mealLabel(period.meal, lang)}
                         </span>
                       </div>
-                      {period.rates.some((rate) => rate.status !== 'Ready') && (
+                      {canEdit && period.rates.some((rate) => rate.status !== 'Ready') && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -211,7 +219,7 @@ export default function PackageDetailPage() {
                     <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 lg:grid-cols-3">
                       {period.rates.map((rate) => (
                         <div key={rate.id} className="flex min-h-[76px] items-center gap-3 rounded-card border border-navy-100 bg-surface px-3 py-2 transition hover:border-navy-200">
-                          <Checkbox checked={selected.includes(rate.id)} onChange={() => toggle(rate.id)} />
+                          <Checkbox checked={selected.includes(rate.id)} disabled={rate.status !== 'Ready'} onChange={() => rate.status === 'Ready' && toggle(rate.id)} />
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="text-xs font-bold text-navy-600">{roomLabel(rate.room_type, lang)}</span>
@@ -230,7 +238,7 @@ export default function PackageDetailPage() {
         </div>
       )}
 
-      <PackageForm open={edit} onClose={() => setEdit(false)} pkg={pkg} />
+      {canEdit && <PackageForm open={edit} onClose={() => setEdit(false)} pkg={pkg} />}
       <ConfirmDialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}

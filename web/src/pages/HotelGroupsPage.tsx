@@ -8,12 +8,14 @@ import { Modal, ConfirmDialog } from '@/components/ui/modal'
 import { Field, Input, Textarea, Select } from '@/components/ui/inputs'
 import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
+import { useAuth } from '@/context/AuthContext'
 import { REGIONS } from '@/lib/labels'
 import { api, ApiError } from '@/lib/api'
 import type { HotelGroup } from '@/types'
 
 export default function HotelGroupsPage() {
   const { t } = useI18n()
+  const { canEdit } = useAuth()
   const toast = useToast()
   const qc = useQueryClient()
   const { data: groups, isLoading } = useHotelGroups()
@@ -38,12 +40,12 @@ export default function HotelGroupsPage() {
       <PageHeader
         title={t('nav.groups')}
         subtitle={t('groups.subtitle')}
-        actions={<Button size="sm" onClick={() => { setEdit(null); setOpen(true) }}><Plus className="h-4 w-4" />{t('groups.add')}</Button>}
+        actions={canEdit ? <Button size="sm" onClick={() => { setEdit(null); setOpen(true) }}><Plus className="h-4 w-4" />{t('groups.add')}</Button> : null}
       />
       {isLoading ? (
         <PageLoader />
       ) : (groups ?? []).length === 0 ? (
-        <EmptyState icon={<Boxes className="h-7 w-7" />} title={t('groups.empty')} action={<Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" />{t('groups.add')}</Button>} />
+        <EmptyState icon={<Boxes className="h-7 w-7" />} title={t('groups.empty')} action={canEdit ? <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" />{t('groups.add')}</Button> : undefined} />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {groups!.map((g) => (
@@ -53,22 +55,24 @@ export default function HotelGroupsPage() {
                   <h3 className="font-bold text-navy-900">{g.name}</h3>
                   {g.brand_name && <p className="text-xs text-ink-muted">{g.brand_name}</p>}
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => { setEdit(g); setOpen(true) }}
-                    className="grid h-9 w-9 place-items-center rounded-btn text-navy-500 hover:bg-navy-50"
-                    aria-label={t('common.edit')}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => setDel(g)}
-                    className="grid h-9 w-9 place-items-center rounded-btn text-red-600 hover:bg-red-50"
-                    aria-label={t('common.delete')}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+                {canEdit && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => { setEdit(g); setOpen(true) }}
+                      className="grid h-9 w-9 place-items-center rounded-btn text-navy-500 hover:bg-navy-50"
+                      aria-label={t('common.edit')}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setDel(g)}
+                      className="grid h-9 w-9 place-items-center rounded-btn text-red-600 hover:bg-red-50"
+                      aria-label={t('common.delete')}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
               </div>
               {g.notes && <p className="line-clamp-2 text-sm text-ink-muted">{g.notes}</p>}
               <div className="mt-1 flex items-center gap-3 border-t border-navy-100 pt-2 text-xs text-ink-muted">
@@ -79,16 +83,18 @@ export default function HotelGroupsPage() {
           ))}
         </div>
       )}
-      {open && <GroupModal group={edit} onClose={() => setOpen(false)} />}
-      <ConfirmDialog
-        open={!!del}
-        onClose={() => setDel(null)}
-        onConfirm={() => del && remove.mutate(del.id)}
-        danger
-        confirmText={t('common.delete')}
-        loading={remove.isPending}
-        message={t('groups.deleteQ', { name: del?.name ?? '' })}
-      />
+      {canEdit && open && <GroupModal group={edit} onClose={() => setOpen(false)} />}
+      {canEdit && (
+        <ConfirmDialog
+          open={!!del}
+          onClose={() => setDel(null)}
+          onConfirm={() => del && remove.mutate(del.id)}
+          danger
+          confirmText={t('common.delete')}
+          loading={remove.isPending}
+          message={t('groups.deleteQ', { name: del?.name ?? '' })}
+        />
+      )}
     </div>
   )
 }

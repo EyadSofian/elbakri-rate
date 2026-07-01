@@ -27,7 +27,7 @@ function useCount(status?: string) {
 }
 
 export default function DashboardPage() {
-  const { canExport } = useAuth()
+  const { canEdit, canExport } = useAuth()
   const toast = useToast()
   const { t } = useI18n()
   const total = useCount()
@@ -70,10 +70,14 @@ export default function DashboardPage() {
       </div>
 
       <div className="mb-5 flex flex-wrap gap-2">
-        <Button size="sm" onClick={() => setAddHotel(true)}><Plus className="h-4 w-4" />{t('hotels.add')}</Button>
-        <Link to="/packages"><Button size="sm" variant="outline"><Package className="h-4 w-4" />{t('dash.addPackage')}</Button></Link>
-        <Button size="sm" variant="outline" onClick={() => setAddRate(true)}><Tag className="h-4 w-4" />{t('hotel.addRate')}</Button>
-        <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" />{t('common.import')}</Button>
+        {canEdit && (
+          <>
+            <Button size="sm" onClick={() => setAddHotel(true)}><Plus className="h-4 w-4" />{t('hotels.add')}</Button>
+            <Link to="/packages"><Button size="sm" variant="outline"><Package className="h-4 w-4" />{t('dash.addPackage')}</Button></Link>
+            <Button size="sm" variant="outline" onClick={() => setAddRate(true)}><Tag className="h-4 w-4" />{t('hotel.addRate')}</Button>
+            <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" />{t('common.import')}</Button>
+          </>
+        )}
         {canExport && <Button size="sm" variant="ghost" onClick={exportCsv}><Download className="h-4 w-4" />{t('dash.exportCsv')}</Button>}
       </div>
 
@@ -95,9 +99,13 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <HotelForm open={addHotel} onClose={() => setAddHotel(false)} />
-      <RateForm open={addRate} onClose={() => setAddRate(false)} />
-      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
+      {canEdit && (
+        <>
+          <HotelForm open={addHotel} onClose={() => setAddHotel(false)} />
+          <RateForm open={addRate} onClose={() => setAddRate(false)} />
+          <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
+        </>
+      )}
     </div>
   )
 }

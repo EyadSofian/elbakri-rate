@@ -58,6 +58,7 @@ export interface Hotel {
   status: ActiveStatus
   rates_count?: number
   ready_count?: number
+  draft_count?: number
   independent_rates?: Rate[]
   package_rates?: Rate[]
   packages?: { id: number; package_name: string; package_type: string | null }[]
@@ -77,6 +78,7 @@ export interface Package {
   hotels_count?: number
   rates_count?: number
   ready_rates_count?: number
+  draft_rates_count?: number
   hotels?: Pick<Hotel, 'id' | 'hotel_name' | 'region' | 'sub_region' | 'star_rating' | 'status' | 'description' | 'facilities' | 'child_policy_default' | 'transfer_notes_default'>[]
   rates?: Rate[]
 }
