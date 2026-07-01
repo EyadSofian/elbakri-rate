@@ -9,6 +9,7 @@ import type { Rate } from '@/types'
 export interface HotelInfo {
   description?: string | null
   childPolicyDefault?: string | null
+  transferNotesDefault?: string | null
   facilities?: string | null
 }
 
@@ -19,6 +20,8 @@ export interface OfferExportData {
   title?: string | null
   subtitle?: string | null
   notes?: string | null
+  reference?: string | null
+  issuedDate?: string | null
   phone?: string
   items: Rate[]
   lang?: Lang
@@ -52,10 +55,6 @@ function hotelNameSize(name: string): number {
   return 28
 }
 
-function isPerRoom(basis: Rate['pricing_basis']): boolean {
-  return basis === 'per_room_per_night' || basis === 'per_room_package'
-}
-
 /**
  * Fixed-width branded offer captured by html-to-image at high resolution.
  * Rendered off-viewport, portrait-first, content-driven height, fully bilingual
@@ -63,7 +62,7 @@ function isPerRoom(basis: Rate['pricing_basis']): boolean {
  * nest inside; room prices nest inside periods.
  */
 export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(function ClientOfferExport(
-  { client, title, subtitle, notes, phone = '', items, lang = 'ar', mode = 'auto', hotelInfo },
+  { client, title, subtitle, notes, reference, issuedDate, phone = '', items, lang = 'ar', mode = 'auto', hotelInfo },
   ref,
 ) {
   const dir = lang === 'ar' ? 'rtl' : 'ltr'
@@ -88,10 +87,11 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
     subtitle ??
     (singleHotel ? [singleHotel.region, singleHotel.subRegion].filter(Boolean).join(' · ') || null : null)
 
-  const today = formatDate(new Date().toISOString())
+  const today = formatDate(issuedDate ?? new Date().toISOString())
+  const compact = groups.length > 1 || items.length > 6
   // A single standalone hotel is presented as the headline itself — no repeated
   // per-hotel section header. Packages / multi-hotel offers show a section per hotel.
-  const headlineIsHotel = !!singleHotel
+  const headlineIsHotel = !!singleHotel && (forceHotel || (!title && !isPackageOffer))
 
   return (
     <div
@@ -112,6 +112,11 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
             {client && (
               <div style={{ marginTop: 8, fontSize: 14, color: MUTED, fontWeight: 600 }}>
                 {t('export.presentedTo')}: <span style={{ color: NAVY, fontWeight: 700 }}>{client}</span>
+              </div>
+            )}
+            {reference && (
+              <div style={{ marginTop: client ? 4 : 8, fontSize: 13, color: MUTED, fontWeight: 700 }}>
+                {t('export.reference')}: <span className="nums" style={{ color: NAVY }}>{reference}</span>
               </div>
             )}
           </div>
@@ -154,6 +159,7 @@ export const ClientOfferExport = forwardRef<HTMLDivElement, OfferExportData>(fun
             showHeader={!headlineIsHotel}
             showPackageBadge={isPackageOffer && !!h.packageName}
             info={h.hotelId != null ? hotelInfo?.[h.hotelId] : undefined}
+            compact={compact}
           />
         ))}
 
@@ -196,6 +202,7 @@ function HotelSection({
   showHeader,
   showPackageBadge,
   info,
+  compact,
 }: {
   group: HotelGroup
   lang: Lang
@@ -204,14 +211,15 @@ function HotelSection({
   showHeader: boolean
   showPackageBadge: boolean
   info?: HotelInfo
+  compact: boolean
 }) {
-  // Hotel-level (general) child policy: the hoisted shared one, or the hotel
+  // Hotel-level child policy is shown once; period-level policy is not rendered.
   // default when NO period carries its own — shown a single time.
-  const anyPeriodChild = group.periods.some((p) => p.childPolicy)
-  const hotelChild = group.sharedChildPolicy ?? (!anyPeriodChild ? info?.childPolicyDefault ?? null : null)
+  const hotelChild = group.sharedChildPolicy ?? info?.childPolicyDefault ?? null
   const description = info?.description ?? null
+  const transferNotes = info?.transferNotesDefault ?? null
   const facilities = info?.facilities ?? null
-  const hasInfo = !!(description || hotelChild || facilities)
+  const hasInfo = !!(description || hotelChild || transferNotes || facilities)
 
   return (
     <section>
@@ -241,9 +249,9 @@ function HotelSection({
       )}
 
       {/* Periods */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 10 : 16 }}>
         {group.periods.map((p) => (
-          <PeriodBlock key={p.key} period={p} lang={lang} t={t} allPeriods={allPeriods} />
+          <PeriodBlock key={p.key} period={p} lang={lang} t={t} allPeriods={allPeriods} compact={compact} />
         ))}
       </div>
 
@@ -260,6 +268,12 @@ function HotelSection({
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 13.5, lineHeight: 1.6, color: '#2A3852' }}>
               <Baby style={{ width: 16, height: 16, color: SUB, flexShrink: 0, marginTop: 2 }} />
               <span><strong style={{ color: NAVY }}>{t('export.children')}:</strong> {hotelChild}</span>
+            </div>
+          )}
+          {transferNotes && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 13.5, lineHeight: 1.6, color: '#2A3852' }}>
+              <Bus style={{ width: 16, height: 16, color: SUB, flexShrink: 0, marginTop: 2 }} />
+              <span><strong style={{ color: NAVY }}>{t('export.transfers')}:</strong> {transferNotes}</span>
             </div>
           )}
           {facilities && (
@@ -279,69 +293,60 @@ function PeriodBlock({
   lang,
   t,
   allPeriods,
+  compact,
 }: {
   period: PeriodGroup
   lang: Lang
   t: (k: string, vars?: Record<string, string | number>) => string
   allPeriods: string
+  compact: boolean
 }) {
   const cols = Math.min(Math.max(p.rates.length, 1), 4)
   const dateText = p.from || p.to ? formatDateRange(p.from, p.to, allPeriods) : allPeriods
-  const perLabel = isPerRoom(p.basis) ? t('export.perRoom') : t('export.perPerson')
+  const pricingLabel = t(`pricing.${p.basis}`)
 
   return (
     <div>
       {/* Date / meal bar */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '4px 18px', background: NAVY, borderRadius: 12, padding: '11px 18px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: compact ? '4px 12px' : '4px 18px', background: NAVY, borderRadius: 12, padding: compact ? '8px 14px' : '11px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
           <CalendarDays style={{ width: 18, height: 18, color: GOLD, flexShrink: 0 }} />
           <span style={{ fontSize: 13, fontWeight: 600, color: '#aebfdd' }}>{t('export.period')}</span>
-          <span className="nums" style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{dateText}</span>
+          <span className="nums" style={{ fontSize: compact ? 14 : 16, fontWeight: 700, color: '#fff' }}>{dateText}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Utensils style={{ width: 16, height: 16, color: GOLD, flexShrink: 0 }} />
-          <span style={{ fontSize: 14.5, fontWeight: 700, color: '#fff' }}>{t(`meal.${p.meal}`)}</span>
+          <span style={{ fontSize: compact ? 13 : 14.5, fontWeight: 700, color: '#fff' }}>{t(`meal.${p.meal}`)}</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <span style={{ fontSize: compact ? 12 : 13, fontWeight: 600, color: '#aebfdd' }}>{t('export.pricingBasis')}</span>
+          <span style={{ fontSize: compact ? 13 : 14, fontWeight: 800, color: '#fff' }}>{pricingLabel}</span>
         </div>
       </div>
 
       {/* Equal-width / equal-height price cells */}
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: 12, marginTop: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, gap: compact ? 8 : 12, marginTop: compact ? 8 : 12 }}>
         {p.rates.map((r) => (
           <div
             key={r.id}
-            style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+            style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: compact ? 10 : 14, padding: compact ? '10px 8px' : '16px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
           >
-            <div style={{ fontSize: 15, fontWeight: 700, color: SUB }}>{translate(lang, `room.${r.room_type}`)}</div>
-            <div className="nums" style={{ fontSize: 34, fontWeight: 800, color: NAVY, lineHeight: 1.05, marginTop: 7 }}>{priceNumber(r.adult_price)}</div>
-            <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, letterSpacing: 0.5, color: MUTED }}>
-              <span className="nums">{r.currency}</span> · {perLabel}
+            <div style={{ fontSize: compact ? 13 : 15, fontWeight: 700, color: SUB }}>{translate(lang, `room.${r.room_type}`)}</div>
+            <div className="nums" style={{ fontSize: compact ? 26 : 34, fontWeight: 800, color: NAVY, lineHeight: 1.05, marginTop: compact ? 5 : 7 }}>{priceNumber(r.adult_price)}</div>
+            <div style={{ marginTop: compact ? 4 : 6, fontSize: compact ? 10.5 : 12, fontWeight: 700, letterSpacing: 0.5, color: MUTED }}>
+              <span className="nums">{r.currency}</span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Period meta: transfers + period-specific child policy / notes */}
-      {(p.transfer || p.childPolicy || p.bookingNotes) && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: '6px 22px', marginTop: 10, fontSize: 13, color: MUTED }}>
-          {p.transfer && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
-              <Bus style={{ width: 16, height: 16, color: SUB, flexShrink: 0 }} />
-              {t('export.transfers')}: <strong style={{ color: '#0E1A33', fontWeight: 700 }}>{t(`transfer.${p.transfer}`)}</strong>
-              {p.transferDetails ? <span style={{ color: MUTED }}> · {p.transferDetails}</span> : null}
-            </span>
-          )}
-          {p.childPolicy && (
-            <span style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 7, maxWidth: 620 }}>
-              <Baby style={{ width: 16, height: 16, color: SUB, flexShrink: 0, marginTop: 1 }} />
-              <span style={{ lineHeight: 1.5 }}>{p.childPolicy}</span>
-            </span>
-          )}
-          {p.bookingNotes && (
-            <span style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 7, maxWidth: 620 }}>
-              <Info style={{ width: 16, height: 16, color: SUB, flexShrink: 0, marginTop: 1 }} />
-              <span style={{ lineHeight: 1.5 }}>{p.bookingNotes}</span>
-            </span>
-          )}
+      {/* Period-specific notes only. Hotel child policy / transfers are shown once at hotel level. */}
+      {p.bookingNotes && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: '6px 22px', marginTop: 8, fontSize: compact ? 12 : 13, color: MUTED }}>
+          <span style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 7, maxWidth: 620 }}>
+            <Info style={{ width: 16, height: 16, color: SUB, flexShrink: 0, marginTop: 1 }} />
+            <span style={{ lineHeight: 1.5 }}>{p.bookingNotes}</span>
+          </span>
         </div>
       )}
     </div>

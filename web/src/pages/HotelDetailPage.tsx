@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Baby, Pencil, Plus, CalendarPlus, MapPin, Package, Tag, Trash2, Building2, CalendarDays, Utensils, ImageDown } from 'lucide-react'
+import { ArrowRight, Baby, Bus, Pencil, Plus, CalendarPlus, MapPin, Package, Tag, Trash2, Building2, CalendarDays, Utensils, ImageDown } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
 import { PageLoader, ErrorState, Tabs, EmptyState } from '@/components/ui/misc'
 import { SectionTitle } from '@/components/ui/card'
@@ -16,12 +16,13 @@ import { useLists } from '@/lib/hooks'
 import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
 import { formatPrice, formatDateRange } from '@/lib/utils'
-import { mealLabel, roomLabel, transferText } from '@/lib/labels'
+import { mealLabel, roomLabel } from '@/lib/labels'
 import { groupRates } from '@/lib/grouping'
 import type { Hotel, Rate } from '@/types'
 
 export default function HotelDetailPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
   const { t, lang } = useI18n()
@@ -33,6 +34,7 @@ export default function HotelDetailPage() {
   const [addRate, setAddRate] = useState(false)
   const [editRate, setEditRate] = useState<Rate | null>(null)
   const [delRate, setDelRate] = useState<Rate | null>(null)
+  const [delHotel, setDelHotel] = useState(false)
   const [periodsOpen, setPeriodsOpen] = useState(false)
   const [periods, setPeriods] = useState<Period[]>([newPeriod()])
 
@@ -53,6 +55,16 @@ export default function HotelDetailPage() {
     onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.delete')),
   })
 
+  const removeHotel = useMutation({
+    mutationFn: () => api.del(`/hotels/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hotels'] })
+      toast.success(t('hotel.deleted'))
+      navigate('/hotels')
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.delete')),
+  })
+
   const independent = hotel?.independent_rates ?? []
   const pkgRates = hotel?.package_rates ?? []
   const allRates = useMemo(() => [...independent, ...pkgRates], [independent, pkgRates])
@@ -66,6 +78,7 @@ export default function HotelDetailPage() {
     [hotel.id]: {
       description: hotel.description,
       childPolicyDefault: hotel.child_policy_default,
+      transferNotesDefault: hotel.transfer_notes_default,
       facilities: hotel.facilities,
     },
   }
@@ -94,11 +107,18 @@ export default function HotelDetailPage() {
                 {hotel.child_policy_default}
               </p>
             )}
+            {hotel.transfer_notes_default && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-ink">
+                <Bus className="h-4 w-4 text-navy-500" />
+                {hotel.transfer_notes_default}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => setEditHotel(true)}><Pencil className="h-4 w-4" />{t('common.edit')}</Button>
             <Button variant="outline" size="sm" onClick={() => setPeriodsOpen(true)}><CalendarPlus className="h-4 w-4" />{t('hotel.periods')}</Button>
             <Button size="sm" onClick={() => setAddRate(true)}><Plus className="h-4 w-4" />{t('hotel.addRate')}</Button>
+            <Button variant="danger" size="sm" onClick={() => setDelHotel(true)}><Trash2 className="h-4 w-4" />{t('common.delete')}</Button>
           </div>
         </div>
       </div>
@@ -180,12 +200,6 @@ export default function HotelDetailPage() {
                     </div>
                   ))}
                 </div>
-                {(p.transfer === 'Included' || p.childPolicy) && (
-                  <div className="flex flex-wrap items-start gap-x-4 gap-y-1 border-t border-navy-50 px-3 py-2 text-xs text-ink-muted">
-                    {p.transfer === 'Included' && <span className="inline-flex items-center gap-1 text-green-600">{transferText('Included', lang)}</span>}
-                    {p.childPolicy && <span className="inline-flex items-start gap-1"><Baby className="mt-0.5 h-3.5 w-3.5 shrink-0 text-navy-500" />{p.childPolicy}</span>}
-                  </div>
-                )}
               </div>
             )),
           )}
@@ -220,6 +234,15 @@ export default function HotelDetailPage() {
         confirmText={t('common.delete')}
         loading={removeRate.isPending}
         message={t('hotel.deleteRateQ')}
+      />
+      <ConfirmDialog
+        open={delHotel}
+        onClose={() => setDelHotel(false)}
+        onConfirm={() => removeHotel.mutate()}
+        danger
+        confirmText={t('common.delete')}
+        loading={removeHotel.isPending}
+        message={t('hotel.deleteQ', { name: hotel.hotel_name })}
       />
     </div>
   )

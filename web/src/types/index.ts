@@ -4,7 +4,7 @@ export type ActiveStatus = 'Active' | 'Inactive'
 export type QuoteStatus = 'draft' | 'ready' | 'sent' | 'archived'
 export type TransferOpt = 'Included' | 'Optional' | 'Not Included'
 export type Currency = 'EGP' | 'USD' | 'EUR' | 'SAR'
-export type MealPlan = 'RO' | 'BB' | 'HB' | 'FB' | 'AI' | 'UAI'
+export type MealPlan = 'RO' | 'BB' | 'HB' | 'FB' | 'AI' | 'SAI' | 'UAI'
 export type PricingBasis =
   | 'per_person_per_night'
   | 'per_room_per_night'
@@ -76,7 +76,7 @@ export interface Package {
   hotels_count?: number
   rates_count?: number
   ready_rates_count?: number
-  hotels?: Pick<Hotel, 'id' | 'hotel_name' | 'region' | 'star_rating' | 'status'>[]
+  hotels?: Pick<Hotel, 'id' | 'hotel_name' | 'region' | 'sub_region' | 'star_rating' | 'status' | 'description' | 'facilities' | 'child_policy_default' | 'transfer_notes_default'>[]
   rates?: Rate[]
 }
 

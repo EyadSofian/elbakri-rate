@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, User, Phone, Printer, Share2, Building2, Send, Bus, Baby, CalendarDays, Utensils } from 'lucide-react'
+import { ArrowRight, User, Phone, Printer, Share2, Building2, Send, Baby, CalendarDays, Utensils } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
 import { PageLoader, ErrorState } from '@/components/ui/misc'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,7 @@ import { ExportActions } from '@/components/export/ExportActions'
 import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
 import { formatPrice, formatDateRange } from '@/lib/utils'
-import { mealLabel, roomLabel, transferText } from '@/lib/labels'
+import { mealLabel, roomLabel } from '@/lib/labels'
 import { groupRates } from '@/lib/grouping'
 import type { Quote, QuoteItem } from '@/types'
 
@@ -65,6 +65,8 @@ export default function QuoteDetailPage() {
             items={items}
             client={quote.client_name}
             notes={quote.client_notes}
+            reference={quote.quote_number}
+            issuedDate={quote.updated_at ?? quote.created_at}
             quoteId={quote.id}
             fileBase={`elbakri-${quote.quote_number}`}
           />
@@ -78,9 +80,7 @@ export default function QuoteDetailPage() {
 
       {/* Grouped preview: hotel → period → room prices */}
       <div className="space-y-6">
-        {groups.map((h) => {
-          const anyPeriodChild = h.periods.some((p) => p.childPolicy)
-          return (
+        {groups.map((h) => (
             <div key={h.hotelId ?? h.name}>
               <h3 className="mb-2 flex flex-wrap items-center gap-2 border-b-2 border-navy-900 pb-1.5 text-lg font-extrabold text-navy-900">
                 <Building2 className="h-5 w-5 text-navy-500" />
@@ -109,28 +109,17 @@ export default function QuoteDetailPage() {
                         </div>
                       ))}
                     </div>
-                    {(p.transfer === 'Included' || p.childPolicy) && (
-                      <div className="flex flex-wrap items-start gap-x-4 gap-y-1 border-t border-navy-50 px-3 py-2 text-xs text-ink-muted">
-                        {p.transfer === 'Included' && (
-                          <span className="inline-flex items-center gap-1 text-green-600"><Bus className="h-3.5 w-3.5" />{transferText('Included', lang)}</span>
-                        )}
-                        {p.childPolicy && (
-                          <span className="inline-flex items-start gap-1"><Baby className="mt-0.5 h-3.5 w-3.5 shrink-0 text-navy-500" />{p.childPolicy}</span>
-                        )}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
               {/* General (shared) child policy — once per hotel */}
-              {!anyPeriodChild && h.sharedChildPolicy && (
+              {h.sharedChildPolicy && (
                 <p className="mt-2 inline-flex items-start gap-1.5 text-xs text-ink-muted">
                   <Baby className="mt-0.5 h-3.5 w-3.5 shrink-0 text-navy-500" />{h.sharedChildPolicy}
                 </p>
               )}
             </div>
-          )
-        })}
+        ))}
       </div>
     </div>
   )

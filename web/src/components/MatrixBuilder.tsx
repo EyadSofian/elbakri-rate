@@ -2,37 +2,26 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Building2, Save, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Checkbox, Field, Select } from '@/components/ui/inputs'
+import { Checkbox } from '@/components/ui/inputs'
 import { SectionTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/toast'
 import { PeriodsEditor, newPeriod, periodsToApi, countRecords, type Period } from '@/components/PeriodsEditor'
-import { useHotels, usePackages, useLists } from '@/lib/hooks'
+import { useHotels, useLists } from '@/lib/hooks'
 import { useI18n } from '@/lib/i18n'
 import { api, ApiError } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-export function MatrixBuilder({ fixedPackageId, presetHotelIds, onDone }: { fixedPackageId?: number; presetHotelIds?: number[]; onDone?: () => void }) {
+export function MatrixBuilder({ presetHotelIds, onDone }: { presetHotelIds?: number[]; onDone?: () => void }) {
   const toast = useToast()
   const qc = useQueryClient()
   const { t } = useI18n()
   const { data: hotels } = useHotels()
-  const { data: packages } = usePackages()
   const { data: lists } = useLists()
 
-  const [packageId, setPackageId] = useState<string>(fixedPackageId ? String(fixedPackageId) : '')
   const [hotelIds, setHotelIds] = useState<number[]>(presetHotelIds ?? [])
   const [periods, setPeriods] = useState<Period[]>([newPeriod()])
   const [overwrite, setOverwrite] = useState(false)
-
-  // When a package is chosen, restrict the hotel list to that package's hotels.
-  const pkg = packages?.find((p) => String(p.id) === packageId)
-  const hotelOptions = useMemo(() => {
-    if (pkg && pkg.hotels) {
-      const ids = new Set(pkg.hotels.map((h) => h.id))
-      return (hotels ?? []).filter((h) => ids.has(h.id))
-    }
-    return hotels ?? []
-  }, [hotels, pkg])
+  const hotelOptions = useMemo(() => hotels ?? [], [hotels])
 
   const toggle = (id: number) => setHotelIds((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
   const expected = hotelIds.length * countRecords(periods)
@@ -40,7 +29,6 @@ export function MatrixBuilder({ fixedPackageId, presetHotelIds, onDone }: { fixe
   const save = useMutation({
     mutationFn: () =>
       api.post<{ rates_created: number }>('/rates/matrix', {
-        package_id: packageId ? Number(packageId) : null,
         hotel_ids: hotelIds,
         periods: periodsToApi(periods),
         overwrite,
@@ -62,18 +50,6 @@ export function MatrixBuilder({ fixedPackageId, presetHotelIds, onDone }: { fixe
 
   return (
     <div className="space-y-5 pb-24">
-      {!fixedPackageId && (
-        <div className="card p-4">
-          <Field label={t('matrix.package')}>
-            <Select value={packageId} onChange={(e) => { setPackageId(e.target.value); setHotelIds([]) }}>
-              <option value="">{t('matrix.noPackage')}</option>
-              {packages?.map((p) => <option key={p.id} value={p.id}>{p.package_name}</option>)}
-            </Select>
-          </Field>
-          <p className="mt-1 text-xs text-ink-muted">{t('matrix.packageHint')}</p>
-        </div>
-      )}
-
       <div className="card p-4">
         <SectionTitle>
           <span className="flex items-center gap-2"><Building2 className="h-4 w-4 text-navy-500" />{t('matrix.hotels')} <span className="nums text-ink-muted">({hotelIds.length})</span></span>

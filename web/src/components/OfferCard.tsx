@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { Plus, Check, CalendarRange, BedDouble, Bus, MapPin, Baby } from 'lucide-react'
+import { Plus, Check, CalendarRange, BedDouble, MapPin } from 'lucide-react'
 import { Badge, Stars } from '@/components/ui/badge'
 import { useQuoteCart } from '@/context/QuoteCartContext'
 import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
 import { formatPrice, formatDateRange, cn } from '@/lib/utils'
-import { mealLabel, roomLabel, pricingText, transferText } from '@/lib/labels'
+import { mealLabel, roomLabel, pricingText } from '@/lib/labels'
 import { ApiError } from '@/lib/api'
 import type { Rate } from '@/types'
 
@@ -50,13 +50,6 @@ export function OfferCard({ rate, stars }: { rate: Rate; stars?: number | null }
           <span className="inline-flex items-center gap-1.5"><CalendarRange className="h-4 w-4 shrink-0 text-navy-400" />{formatDateRange(rate.date_from, rate.date_to, t('export.allPeriods'))}</span>
           <span className="inline-flex items-center gap-1.5"><BedDouble className="h-4 w-4 shrink-0 text-navy-400" />{roomLabel(rate.room_type, lang)} · {mealLabel(rate.meal_plan, lang)}</span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-ink-muted">
-          <span className={cn('inline-flex items-center gap-1', rate.transfer_included === 'Included' && 'text-green-600')}>
-            <Bus className="h-3.5 w-3.5 shrink-0" />{transferText(rate.transfer_included, lang)}
-          </span>
-          {rate.child_policy && <span className="inline-flex items-center gap-1 truncate"><Baby className="h-3.5 w-3.5 shrink-0" />{rate.child_policy.slice(0, 40)}</span>}
-        </div>
-
         <div className="mt-auto flex items-end justify-between gap-2 pt-2">
           <div>
             <div className="nums text-2xl font-extrabold leading-none text-navy-900">{formatPrice(rate.adult_price, rate.currency)}</div>

@@ -123,6 +123,8 @@ const AR: Record<string, string> = {
   'export.term1': 'الأسعار قابلة للتغيير حسب التوافر.',
   'export.term2': 'برجاء التأكيد قبل الحجز.',
   'export.issued': 'صدر بتاريخ',
+  'export.reference': 'رقم العرض',
+  'export.pricingBasis': 'نوع التسعير',
 
   // Package export panel
   'pkg.exportTitle': 'تصدير الباقة للعميل',
@@ -136,6 +138,7 @@ const AR: Record<string, string> = {
   'meal.HB': 'نصف إقامة',
   'meal.FB': 'إقامة كاملة',
   'meal.AI': 'شامل',
+  'meal.SAI': 'سوفت أول إنكلوسف',
   'meal.UAI': 'شامل فاخر',
 
   // Enum: room types
@@ -248,6 +251,8 @@ const AR: Record<string, string> = {
   'hotel.exportHint': 'يصدّر كل أسعار الفندق مجمّعة حسب الفترة ونوع الغرفة.',
   'hotel.ratesAdded': 'تمت إضافة {n} سعر',
   'hotel.rateDeleted': 'تم حذف السعر',
+  'hotel.deleteQ': 'هل تريد حذف الفندق {name}؟',
+  'hotel.deleted': 'تم حذف الفندق',
 
   // Quotes list
   'quotes.subtitle': 'عروض الأسعار المحفوظة والمرسلة',
@@ -304,6 +309,8 @@ const AR: Record<string, string> = {
   'package.selectHotelErr': 'اختر فندقًا',
   'package.statusUpdated': 'تم تحديث {n} سعر',
   'package.copied': 'تم نسخ {n} سعر',
+  'package.deleteQ': 'هل تريد حذف الباقة {name}؟',
+  'package.deleted': 'تم حذف الباقة',
 
   // Package form
   'pkgForm.editTitle': 'تعديل باقة',
@@ -608,6 +615,8 @@ const EN: Record<string, string> = {
   'export.term1': 'Prices are subject to availability.',
   'export.term2': 'Please confirm before booking.',
   'export.issued': 'Issued',
+  'export.reference': 'Offer no.',
+  'export.pricingBasis': 'Pricing basis',
 
   'pkg.exportTitle': 'Export package for client',
   'pkg.exportHint': 'With no selection only ready rates are exported. Selecting rates below exports just those.',
@@ -619,6 +628,7 @@ const EN: Record<string, string> = {
   'meal.HB': 'Half Board',
   'meal.FB': 'Full Board',
   'meal.AI': 'All Inclusive',
+  'meal.SAI': 'Soft All Inclusive',
   'meal.UAI': 'Ultra All Inclusive',
 
   'room.Single': 'Single',
@@ -724,6 +734,8 @@ const EN: Record<string, string> = {
   'hotel.exportHint': 'Exports all of the hotel’s rates grouped by period and room type.',
   'hotel.ratesAdded': '{n} rates added',
   'hotel.rateDeleted': 'Rate deleted',
+  'hotel.deleteQ': 'Delete hotel {name}?',
+  'hotel.deleted': 'Hotel deleted',
 
   // Quotes list
   'quotes.subtitle': 'Saved and sent quotes',
@@ -780,6 +792,8 @@ const EN: Record<string, string> = {
   'package.selectHotelErr': 'Select a hotel',
   'package.statusUpdated': '{n} rate(s) updated',
   'package.copied': '{n} rate(s) copied',
+  'package.deleteQ': 'Delete package {name}?',
+  'package.deleted': 'Package deleted',
 
   // Package form
   'pkgForm.editTitle': 'Edit package',

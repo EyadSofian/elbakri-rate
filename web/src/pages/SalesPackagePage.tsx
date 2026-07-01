@@ -24,6 +24,21 @@ export default function SalesPackagePage() {
 
   const readyRates = useMemo(() => (pkg?.rates ?? []).filter((r) => r.status === 'Ready'), [pkg])
   const groups = useMemo(() => groupRates(readyRates), [readyRates])
+  const hotelInfo = useMemo(
+    () =>
+      Object.fromEntries(
+        (pkg?.hotels ?? []).map((h) => [
+          h.id,
+          {
+            description: h.description,
+            childPolicyDefault: h.child_policy_default,
+            transferNotesDefault: h.transfer_notes_default,
+            facilities: h.facilities,
+          },
+        ]),
+      ),
+    [pkg],
+  )
 
   if (isLoading) return <PageLoader />
   if (error || !pkg) return <ErrorState message={(error as Error)?.message ?? t('common.notFound')} />
@@ -73,6 +88,8 @@ export default function SalesPackagePage() {
           client={client || null}
           title={pkg.package_name}
           subtitle={pkg.region}
+          notes={pkg.description}
+          hotelInfo={hotelInfo}
           fileBase={`elbakri-${pkg.package_name}`}
         />
       </div>

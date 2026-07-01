@@ -164,7 +164,7 @@ function HotelQuickExport({ hotelId, hotelName, region, subRegion }: { hotelId: 
       mode="hotel"
       items={items}
       subtitle={[region, subRegion].filter(Boolean).join(' · ') || null}
-      hotelInfo={{ [hotelId]: { description: data.description, childPolicyDefault: data.child_policy_default, facilities: data.facilities } }}
+      hotelInfo={{ [hotelId]: { description: data.description, childPolicyDefault: data.child_policy_default, transferNotesDefault: data.transfer_notes_default, facilities: data.facilities } }}
       fileBase={`elbakri-${hotelName}`}
     />
   )

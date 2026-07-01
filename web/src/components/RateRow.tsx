@@ -1,7 +1,7 @@
-import { Pencil, Trash2, CalendarRange, BedDouble, Bus } from 'lucide-react'
+import { Pencil, Trash2, CalendarRange, BedDouble } from 'lucide-react'
 import { RateStatusBadge, Badge } from '@/components/ui/badge'
 import { formatPrice, formatDateRange, cn } from '@/lib/utils'
-import { mealLabel, roomLabel, transferText } from '@/lib/labels'
+import { mealLabel, roomLabel } from '@/lib/labels'
 import { useI18n } from '@/lib/i18n'
 import type { Rate } from '@/types'
 
@@ -42,7 +42,6 @@ export function RateRow({
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-ink-muted">
           <span className="inline-flex items-center gap-1"><CalendarRange className="h-3.5 w-3.5 shrink-0" />{formatDateRange(rate.date_from, rate.date_to, t('export.allPeriods'))}</span>
           <span className="inline-flex items-center gap-1"><BedDouble className="h-3.5 w-3.5 shrink-0" />{roomLabel(rate.room_type, lang)} · {mealLabel(rate.meal_plan, lang)}</span>
-          {rate.transfer_included === 'Included' && <span className="inline-flex items-center gap-1 text-green-600"><Bus className="h-3.5 w-3.5 shrink-0" />{transferText('Included', lang)}</span>}
         </div>
       </div>
       <div className="shrink-0 text-left">

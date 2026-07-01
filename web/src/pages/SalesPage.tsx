@@ -22,7 +22,6 @@ export default function SalesPage() {
   const [room, setRoom] = useState('')
   const [meal, setMeal] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
-  const [transfersOnly, setTransfersOnly] = useState(false)
 
   const { data, isLoading } = useQuery({ queryKey: ['sales-rates'], queryFn: () => api.get<{ items: Rate[] }>('/rates', { per_page: 200 }), select: (d) => d.items })
   const { data: packages } = usePackages()
@@ -33,11 +32,10 @@ export default function SalesPage() {
       if (region && r.region !== region) return false
       if (room && r.room_type !== room) return false
       if (meal && r.meal_plan !== meal) return false
-      if (transfersOnly && r.transfer_included !== 'Included') return false
       if (maxPrice && Number(r.adult_price ?? Infinity) > Number(maxPrice)) return false
       return true
     })
-  }, [data, q, region, room, meal, transfersOnly, maxPrice])
+  }, [data, q, region, room, meal, maxPrice])
 
   const hotelOffers = filtered.filter((r) => !r.package_id)
   const packageOffers = filtered.filter((r) => r.package_id)
@@ -70,13 +68,9 @@ export default function SalesPage() {
           </Select>
           <Select value={meal} onChange={(e) => setMeal(e.target.value)}>
             <option value="">{t('sales.allMeals')}</option>
-            {(['RO', 'BB', 'HB', 'FB', 'AI', 'UAI'] as MealPlan[]).map((m) => <option key={m} value={m}>{mealLabel(m, lang)}</option>)}
+          {(['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI'] as MealPlan[]).map((m) => <option key={m} value={m}>{mealLabel(m, lang)}</option>)}
           </Select>
           <Input type="number" inputMode="decimal" placeholder={t('sales.maxPrice')} value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} />
-          <label className="col-span-2 flex min-h-[44px] items-center gap-2 text-sm sm:col-span-4">
-            <input type="checkbox" checked={transfersOnly} onChange={(e) => setTransfersOnly(e.target.checked)} className="h-5 w-5 accent-navy-700" />
-            {t('sales.transfersOnly')}
-          </label>
         </div>
       )}
 
@@ -85,7 +79,7 @@ export default function SalesPage() {
         onChange={setTab}
         tabs={[
           { key: 'hotels', label: t('sales.tabHotels'), count: hotelOffers.length },
-          { key: 'packages', label: t('sales.tabPackages'), count: packageOffers.length },
+          { key: 'packages', label: t('sales.tabPackages'), count: readyPackages.length },
         ]}
       />
 

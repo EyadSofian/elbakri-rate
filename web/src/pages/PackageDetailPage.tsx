@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { ArrowRight, Building2, CalendarDays, Eye, ImageDown, Pencil, Utensils } from 'lucide-react'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArrowRight, Building2, CalendarDays, Eye, ImageDown, Pencil, Trash2, Utensils } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { api, ApiError } from '@/lib/api'
 import { PageLoader, ErrorState, EmptyState } from '@/components/ui/misc'
 import { SectionTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,8 @@ import { Badge, RateStatusBadge } from '@/components/ui/badge'
 import { Checkbox, Input } from '@/components/ui/inputs'
 import { PackageForm } from '@/components/PackageForm'
 import { ExportActions } from '@/components/export/ExportActions'
+import { ConfirmDialog } from '@/components/ui/modal'
+import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
 import { categoryText, mealLabel, roomLabel } from '@/lib/labels'
 import { formatDateRange, formatPrice } from '@/lib/utils'
@@ -18,6 +20,9 @@ import type { Package } from '@/types'
 
 export default function PackageDetailPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const toast = useToast()
   const { t, lang } = useI18n()
   const { data: pkg, isLoading, error } = useQuery({
     queryKey: ['package', id],
@@ -25,6 +30,7 @@ export default function PackageDetailPage() {
   })
 
   const [edit, setEdit] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [selected, setSelected] = useState<number[]>([])
   const [clientName, setClientName] = useState('')
 
@@ -35,6 +41,31 @@ export default function PackageDetailPage() {
     return readyRates
   }, [pkg, readyRates, selected])
   const groups = useMemo(() => groupRates(pkg?.rates ?? []), [pkg])
+  const hotelInfo = useMemo(
+    () =>
+      Object.fromEntries(
+        (pkg?.hotels ?? []).map((h) => [
+          h.id,
+          {
+            description: h.description,
+            childPolicyDefault: h.child_policy_default,
+            transferNotesDefault: h.transfer_notes_default,
+            facilities: h.facilities,
+          },
+        ]),
+      ),
+    [pkg],
+  )
+
+  const deletePackage = useMutation({
+    mutationFn: () => api.del(`/packages/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['packages'] })
+      toast.success(t('package.deleted'))
+      navigate('/packages')
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.delete')),
+  })
 
   if (isLoading) return <PageLoader />
   if (error || !pkg) return <ErrorState message={(error as Error)?.message ?? t('err.notFound')} />
@@ -64,6 +95,9 @@ export default function PackageDetailPage() {
             </Link>
             <Button variant="outline" size="sm" onClick={() => setEdit(true)}>
               <Pencil className="h-4 w-4" />{t('package.manageHotels')}
+            </Button>
+            <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="h-4 w-4" />{t('common.delete')}
             </Button>
           </div>
         </div>
@@ -95,6 +129,8 @@ export default function PackageDetailPage() {
               client={clientName || null}
               title={pkg.package_name}
               subtitle={pkg.region}
+              notes={pkg.description}
+              hotelInfo={hotelInfo}
               fileBase={`elbakri-${pkg.package_name}`}
             />
           </div>
@@ -173,6 +209,15 @@ export default function PackageDetailPage() {
       )}
 
       <PackageForm open={edit} onClose={() => setEdit(false)} pkg={pkg} />
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => deletePackage.mutate()}
+        danger
+        confirmText={t('common.delete')}
+        loading={deletePackage.isPending}
+        message={t('package.deleteQ', { name: pkg.package_name })}
+      />
     </div>
   )
 }

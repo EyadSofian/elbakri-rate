@@ -14,6 +14,8 @@ export function ExportActions({
   title,
   subtitle,
   notes,
+  reference,
+  issuedDate,
   quoteId,
   hotelInfo,
   mode,
@@ -25,6 +27,8 @@ export function ExportActions({
   title?: string | null
   subtitle?: string | null
   notes?: string | null
+  reference?: string | null
+  issuedDate?: string | null
   quoteId?: number
   hotelInfo?: Record<number, HotelInfo>
   mode?: 'auto' | 'hotel'
@@ -45,7 +49,7 @@ export function ExportActions({
     return true
   }
 
-  const data = (): OfferExportData => ({ items, client, title, subtitle, notes, lang, hotelInfo, mode })
+  const data = (): OfferExportData => ({ items, client, title, subtitle, notes, reference, issuedDate, lang, hotelInfo, mode })
   const safeName = (fileBase || 'elbakri-offer').replace(/[\\/:*?"<>|]+/g, '-')
 
   const png = async () => {

@@ -50,7 +50,8 @@ function route_packages(string $method, array $seg, array $body): void
 
         [$visSql, $visParams] = rates_visibility($user, 'r');
         $pkg['hotels'] = fetch_all(
-            'SELECT h.id, h.hotel_name, h.region, h.star_rating, h.status
+            'SELECT h.id, h.hotel_name, h.region, h.sub_region, h.star_rating, h.status,
+                    h.description, h.facilities, h.child_policy_default, h.transfer_notes_default
              FROM package_hotels ph JOIN hotels h ON h.id = ph.hotel_id
              WHERE ph.package_id = ? ORDER BY h.hotel_name',
             [$id]
