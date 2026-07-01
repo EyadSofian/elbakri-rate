@@ -122,6 +122,8 @@ const AR: Record<string, string> = {
   'export.term1': 'الأسعار قابلة للتغيير حسب التوافر.',
   'export.term2': 'برجاء التأكيد قبل الحجز.',
   'export.issued': 'صدر بتاريخ',
+  'export.page': 'صفحة',
+  'export.meal': 'الوجبة',
   'export.reference': 'رقم العرض',
   'export.pricingBasis': 'نوع التسعير',
 
@@ -618,6 +620,8 @@ const EN: Record<string, string> = {
   'export.term1': 'Prices are subject to availability.',
   'export.term2': 'Please confirm before booking.',
   'export.issued': 'Issued',
+  'export.page': 'Page',
+  'export.meal': 'Meal',
   'export.reference': 'Offer no.',
   'export.pricingBasis': 'Pricing basis',
 
