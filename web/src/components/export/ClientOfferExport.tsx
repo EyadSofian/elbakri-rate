@@ -155,7 +155,8 @@ export function buildOffer(data: OfferExportData): { analysis: OfferAnalysis; bl
           dir={dir}
           t={t}
           showHeader={!headlineIsHotel}
-          showPackageBadge={isPackageOffer && !!h.packageName}
+          showPackageBadge={!isPackageOffer && !!h.packageName}
+          compactDetails={isPackageOffer}
           info={h.hotelId != null ? info?.[h.hotelId] : undefined}
         />
       ),
@@ -189,11 +190,11 @@ export function OfferHeaderFull({ analysis }: { analysis: OfferAnalysis }) {
   const { dir, t, isPackageOffer, resolvedTitle, resolvedSubtitle, client, reference } = analysis
   return (
     <div style={{ padding: '22px 52px 12px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+      <div style={{ direction: 'ltr', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
         <div style={{ direction: 'ltr', display: 'flex', alignItems: 'center' }}>
           <Logo className="h-[58px] max-w-[330px]" />
         </div>
-        <div style={{ textAlign: dir === 'rtl' ? 'left' : 'right' }}>
+        <div dir={dir} style={{ textAlign: dir === 'rtl' ? 'right' : 'left' }}>
           <span style={{ display: 'inline-block', background: NAVY, color: '#fff', fontSize: 12, fontWeight: 800, letterSpacing: 0.5, padding: '5px 13px', borderRadius: 7, textTransform: 'uppercase' }}>
             {t('export.heading')}
           </span>
@@ -239,12 +240,12 @@ export function OfferRunningHeader({ analysis }: { analysis: OfferAnalysis }) {
   const { dir, t, resolvedTitle } = analysis
   return (
     <div style={{ padding: '16px 52px 9px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18 }}>
+      <div style={{ direction: 'ltr', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18 }}>
         <div style={{ direction: 'ltr', display: 'flex', alignItems: 'center' }}>
           <Logo className="h-[38px] max-w-[220px]" />
         </div>
         {resolvedTitle && (
-          <div style={{ maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13.5, fontWeight: 700, color: SUB, textAlign: dir === 'rtl' ? 'left' : 'right' }}>
+          <div dir={dir} style={{ maxWidth: 560, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13.5, fontWeight: 700, color: SUB, textAlign: dir === 'rtl' ? 'right' : 'left' }}>
             {t('export.heading')} · {resolvedTitle}
           </div>
         )}
@@ -260,9 +261,9 @@ export function PageFooter({ analysis, page }: { analysis: OfferAnalysis; page: 
   return (
     <div style={{ padding: '9px 52px 14px' }}>
       <div style={{ height: 2, background: BORDER, borderRadius: 999 }} />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginTop: 8 }}>
+      <div style={{ direction: 'ltr', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginTop: 8 }}>
         <div style={{ fontSize: 11.5, fontWeight: 700, color: NAVY, letterSpacing: 0.3 }}>ELBAKRI OVERSEAS FOR TRAVEL</div>
-        <div style={{ fontSize: 11, fontWeight: 600, color: MUTED, textAlign: dir === 'rtl' ? 'left' : 'right' }}>
+        <div dir={dir} style={{ fontSize: 11, fontWeight: 600, color: MUTED, textAlign: dir === 'rtl' ? 'right' : 'left' }}>
           {t('export.page')} <span className="nums">{page.n}/{page.total}</span>
         </div>
       </div>
@@ -284,6 +285,7 @@ function HotelTable({
   t,
   showHeader,
   showPackageBadge,
+  compactDetails,
   info,
 }: {
   group: HotelGroup
@@ -292,6 +294,7 @@ function HotelTable({
   t: T
   showHeader: boolean
   showPackageBadge: boolean
+  compactDetails: boolean
   info?: HotelInfo
 }) {
   const allPeriods = t('export.allPeriods')
@@ -326,12 +329,12 @@ function HotelTable({
           <h2 style={{ margin: 0, fontSize: hotelNameSize(group.name), fontWeight: 800, color: NAVY, lineHeight: 1.15, wordBreak: 'break-word' }}>
             {group.name}
           </h2>
-          {showPackageBadge && group.packageName && (
+          {showPackageBadge && !compactDetails && group.packageName && (
             <span style={{ fontSize: 11.5, fontWeight: 700, color: NAVY, background: '#F4ECD6', border: `1px solid ${GOLD}`, borderRadius: 999, padding: '2px 10px' }}>
               {group.packageName}
             </span>
           )}
-          {(group.region || group.subRegion) && (
+          {!compactDetails && (group.region || group.subRegion) && (
             <span style={{ fontSize: 12.5, fontWeight: 600, color: MUTED }}>
               · {[group.region, group.subRegion].filter(Boolean).join(' · ')}
             </span>
@@ -372,6 +375,7 @@ function HotelTable({
       </div>
 
       {/* Compact footnotes — currency/basis, transfers, child policy, hotel info */}
+      {!compactDetails && (
       <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, lineHeight: 1.5, color: MUTED }}>
         {(currencies.length > 0 || perLabel) && (
           <FootLine icon={<Tag style={fnIcon} />}>
@@ -412,6 +416,7 @@ function HotelTable({
           </FootLine>
         )}
       </div>
+      )}
     </section>
   )
 }
