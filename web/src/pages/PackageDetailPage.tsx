@@ -148,6 +148,7 @@ export default function PackageDetailPage() {
               subtitle={pkg.region}
               notes={pkg.description}
               hotelInfo={hotelInfo}
+              detailsMode="prices-only"
               fileBase={`elbakri-${pkg.package_name}`}
             />
           </div>

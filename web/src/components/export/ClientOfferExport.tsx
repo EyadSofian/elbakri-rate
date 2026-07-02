@@ -29,6 +29,7 @@ export interface OfferExportData {
    *  rate happens to share one package — used by the Hotel Detail / Hotels-list
    *  exports. 'auto' (default) derives the shape from the rates. */
   mode?: 'auto' | 'hotel'
+  detailsMode?: 'full' | 'prices-only'
   /** General hotel info (shown once per hotel), keyed by hotel_id. Only passed
    *  from the Hotel Detail export — quotes/packages omit it. */
   hotelInfo?: Record<number, HotelInfo>
@@ -39,7 +40,7 @@ export interface OfferExportData {
  * ------------------------------------------------------------------ */
 export const PAGE_W = 1080
 export const PAGE_H = Math.round(PAGE_W * (297 / 210)) // 1527
-export const BLOCK_GAP = 16
+export const BLOCK_GAP = 12
 const CONTENT_PAD_X = 52
 
 const NAVY = '#07184A'
@@ -105,6 +106,7 @@ export interface FlowBlock {
 
 export function buildOffer(data: OfferExportData): { analysis: OfferAnalysis; blocks: FlowBlock[] } {
   const { items, mode = 'auto', title, subtitle, client, notes, reference, issuedDate, phone = '' } = data
+  const pricesOnly = data.detailsMode === 'prices-only'
   const lang: Lang = data.lang ?? 'ar'
   const dir: Dir = lang === 'ar' ? 'rtl' : 'ltr'
   const t: T = (k, vars) => translate(lang, k, vars)
@@ -155,8 +157,8 @@ export function buildOffer(data: OfferExportData): { analysis: OfferAnalysis; bl
           dir={dir}
           t={t}
           showHeader={!headlineIsHotel}
-          showPackageBadge={!isPackageOffer && !!h.packageName}
-          compactDetails={isPackageOffer}
+          showPackageBadge={!pricesOnly && !isPackageOffer && !!h.packageName}
+          compactDetails={pricesOnly || isPackageOffer}
           info={h.hotelId != null ? info?.[h.hotelId] : undefined}
         />
       ),
@@ -318,15 +320,21 @@ function HotelTable({
     ),
   )
   const hotelTransferNotes = info?.transferNotesDefault ?? null
+  const compactHotelTitleSize = compactDetails ? Math.min(20, hotelNameSize(group.name)) : hotelNameSize(group.name)
+  const iconBox = compactDetails ? 26 : 32
+  const iconSize = compactDetails ? 15 : 18
+  const bodyPad = compactDetails ? '5px 8px' : '6px 10px'
+  const pricePad = compactDetails ? '5px 7px' : '6px 8px'
+  const priceSize = compactDetails ? 16 : 17
 
   return (
     <section>
       {showHeader && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-          <span style={{ display: 'inline-grid', placeItems: 'center', width: 32, height: 32, borderRadius: 9, background: SURFACE, border: `1px solid ${BORDER}`, flexShrink: 0 }}>
-            <Building2 style={{ width: 18, height: 18, color: NAVY }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: compactDetails ? 5 : 8, flexWrap: 'wrap' }}>
+          <span style={{ display: 'inline-grid', placeItems: 'center', width: iconBox, height: iconBox, borderRadius: 8, background: SURFACE, border: `1px solid ${BORDER}`, flexShrink: 0 }}>
+            <Building2 style={{ width: iconSize, height: iconSize, color: NAVY }} />
           </span>
-          <h2 style={{ margin: 0, fontSize: hotelNameSize(group.name), fontWeight: 800, color: NAVY, lineHeight: 1.15, wordBreak: 'break-word' }}>
+          <h2 style={{ margin: 0, fontSize: compactHotelTitleSize, fontWeight: 800, color: NAVY, lineHeight: 1.12, wordBreak: 'break-word' }}>
             {group.name}
           </h2>
           {showPackageBadge && !compactDetails && group.packageName && (
@@ -358,12 +366,12 @@ function HotelTable({
             const bt = idx === 0 ? undefined : `1px solid ${BORDER}`
             return (
               <Fragment key={p.key}>
-                <div className="nums" style={{ padding: '6px 10px', background: bg, borderTop: bt, textAlign: 'start', fontSize: 12.5, fontWeight: 700, color: SUB, whiteSpace: 'nowrap' }}>{dateText}</div>
-                <div style={{ padding: '6px 10px', background: bg, borderTop: bt, textAlign: 'start', fontSize: 12.5, fontWeight: 700, color: '#0E1A33' }}>{t(`meal.${p.meal}`)}</div>
+                <div className="nums" style={{ padding: bodyPad, background: bg, borderTop: bt, textAlign: 'start', fontSize: 12.5, fontWeight: 700, color: SUB, whiteSpace: 'nowrap' }}>{dateText}</div>
+                <div style={{ padding: bodyPad, background: bg, borderTop: bt, textAlign: 'start', fontSize: 12.5, fontWeight: 700, color: '#0E1A33' }}>{t(`meal.${p.meal}`)}</div>
                 {rooms.map((rt) => {
                   const r = byRoom.get(rt)
                   return (
-                    <div key={rt} className="nums" style={{ padding: '6px 8px', background: bg, borderTop: bt, textAlign: 'center', fontSize: 17, fontWeight: 800, color: r ? NAVY : '#C4CEDE' }}>
+                    <div key={rt} className="nums" style={{ padding: pricePad, background: bg, borderTop: bt, textAlign: 'center', fontSize: priceSize, fontWeight: 800, color: r ? NAVY : '#C4CEDE' }}>
                       {r ? priceNumber(r.adult_price) : '—'}
                     </div>
                   )

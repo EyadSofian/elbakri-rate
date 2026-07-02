@@ -19,6 +19,7 @@ export function ExportActions({
   quoteId,
   hotelInfo,
   mode,
+  detailsMode,
   fileBase = 'elbakri-offer',
   size = 'md',
 }: {
@@ -32,6 +33,7 @@ export function ExportActions({
   quoteId?: number
   hotelInfo?: Record<number, HotelInfo>
   mode?: 'auto' | 'hotel'
+  detailsMode?: OfferExportData['detailsMode']
   fileBase?: string
   size?: 'sm' | 'md'
 }) {
@@ -49,7 +51,7 @@ export function ExportActions({
     return true
   }
 
-  const data = (): OfferExportData => ({ items, client, title, subtitle, notes, reference, issuedDate, lang, hotelInfo, mode })
+  const data = (): OfferExportData => ({ items, client, title, subtitle, notes, reference, issuedDate, lang, hotelInfo, mode, detailsMode })
   const safeName = (fileBase || 'elbakri-offer').replace(/[\\/:*?"<>|]+/g, '-')
 
   const png = async () => {
