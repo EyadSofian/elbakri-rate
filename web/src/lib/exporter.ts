@@ -1,5 +1,5 @@
 import { createElement } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, type Root } from 'react-dom/client'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { downloadBlob } from './utils'
@@ -10,7 +10,6 @@ import {
   SingleDocTree,
   PAGE_W,
   PAGE_H,
-  BLOCK_GAP,
   type OfferExportData,
   type FlowBlock,
 } from '@/components/export/ClientOfferExport'
@@ -18,26 +17,28 @@ import {
 /**
  * Paginated, poster-grade export pipeline.
  *
- * The offer is laid out as a sequence of atomic "flow blocks" (hotel headers,
- * period tables, info boxes, notes, terms). Instead of emitting one arbitrarily
- * tall image (which produced multi-thousand-pixel strips AND corrupt PDFs — a
- * single PDF page can exceed the format's 14 400 pt maximum, and a giant PNG
- * pushed through jsPDF's deflate truncates), we:
+ * The offer is laid out as a sequence of atomic "flow blocks" (hotel sections,
+ * notes, terms). Instead of emitting one arbitrarily tall image (which produced
+ * multi-thousand-pixel strips AND corrupt PDFs — a single PDF page can exceed
+ * the format's 14 400 pt maximum, and a giant PNG pushed through jsPDF's
+ * deflate truncates), we:
  *
  *   1. Render the blocks off-screen once and MEASURE each block + the page
  *      chrome (header/footer) heights.
- *   2. PACK the blocks into fixed A4-proportioned pages, never splitting a block
- *      and keeping each hotel header with its first period.
- *   3. Render the real pages and capture EACH page separately at a safe
- *      resolution — so every raster is small and every PDF page is a valid A4.
- *
- * PNG export → one image when it fits a page, otherwise a numbered set.
- * PDF export → a clean multi-page A4 document.
+ *   2. Decide the shape:
+ *      PNG → one content-fitted poster when the whole offer fits a safe height
+ *            (MAX_SINGLE_H), otherwise numbered A-series pages ("name-1.png",
+ *            "name-2.png", …) so no export is ever an unreadable strip.
+ *      PDF → always fixed A4-proportioned pages.
+ *   3. PACK the blocks into pages (never splitting a block) and capture EACH
+ *      page separately at a safe resolution.
  */
 const PIXEL_RATIO = 2 // 1080×1527 → 2160×3054 per page: crisp for print, never oversized.
 // Vertical breathing room subtracted from each page's usable height so rounding
 // never pushes content past PAGE_H (pages use overflow:hidden).
 const PAGE_SAFETY = 12
+// Tallest allowed single-PNG poster (~1.55 pages). Anything taller pages out.
+const MAX_SINGLE_H = Math.round(PAGE_H * 1.55)
 
 const FONT_SPECS = [
   '400 16px Cairo',
@@ -104,15 +105,23 @@ function nextFrames(): Promise<void> {
   )
 }
 
+async function settle(): Promise<void> {
+  await nextFrames()
+  await ensureFonts()
+  await nextFrames()
+}
+
 /**
  * Greedily pack flow blocks into fixed-height pages.
  * @param heights measured pixel height of each block (same index as `blocks`)
+ * @param gap vertical gap between blocks (density-dependent)
  * @param firstBudget usable content height on page 1 (full header)
  * @param restBudget usable content height on pages 2+ (running header)
  */
 function paginate(
   blocks: FlowBlock[],
   heights: number[],
+  gap: number,
   firstBudget: number,
   restBudget: number,
 ): FlowBlock[][] {
@@ -123,7 +132,7 @@ function paginate(
     const page: number[] = []
     let used = 0
     while (i < blocks.length) {
-      const add = (page.length ? BLOCK_GAP : 0) + heights[i]
+      const add = (page.length ? gap : 0) + heights[i]
       if (used + add > budget && page.length > 0) break
       page.push(i)
       used += add
@@ -145,8 +154,48 @@ function paginate(
   return pages.length ? pages : [[]]
 }
 
-/** Render off-screen, measure, paginate, then capture one PNG per page. */
-async function capturePages(data: OfferExportData): Promise<string[]> {
+/**
+ * Greedy packing fills early pages to the brim and can strand one hotel + the
+ * terms box on a nearly-empty last page. Rebalance: keep the greedy page COUNT
+ * but cap every page near the average fill so the set looks evenly composed.
+ */
+function paginateBalanced(
+  blocks: FlowBlock[],
+  heights: number[],
+  gap: number,
+  firstBudget: number,
+  restBudget: number,
+): FlowBlock[][] {
+  const greedy = paginate(blocks, heights, gap, firstBudget, restBudget)
+  const n = greedy.length
+  if (n <= 1) return greedy
+  const total = heights.reduce((a, b) => a + b, 0) + gap * Math.max(0, heights.length - 1)
+  let soft = Math.ceil(total / n)
+  for (let iter = 0; iter < 12; iter++) {
+    const pages = paginate(blocks, heights, gap, Math.min(firstBudget, soft), Math.min(restBudget, soft))
+    if (pages.length <= n) return pages
+    soft = Math.ceil(soft * 1.06)
+    if (soft >= Math.max(firstBudget, restBudget)) break
+  }
+  return greedy
+}
+
+export interface OfferRender {
+  /** Data-URLs, one per exported image. */
+  urls: string[]
+  /** True when the offer was split into fixed pages (PNG set / PDF pages). */
+  paged: boolean
+}
+
+/**
+ * Render the offer off-screen, measure it, and capture it as images.
+ * `forcePages` (PDF) always paginates; otherwise a single content-fitted
+ * poster is produced when the whole offer fits MAX_SINGLE_H.
+ */
+export async function renderOfferImages(
+  data: OfferExportData,
+  opts: { forcePages?: boolean } = {},
+): Promise<OfferRender> {
   const [, fontEmbedCSS] = await Promise.all([ensureFonts(), getFontEmbedCss()])
   const { analysis, blocks } = buildOffer(data)
 
@@ -162,13 +211,11 @@ async function capturePages(data: OfferExportData): Promise<string[]> {
   } as CSSStyleDeclaration)
   document.body.appendChild(host)
 
-  const root = createRoot(host)
+  const root: Root = createRoot(host)
   try {
     // ---- 1. Measuring pass ----
     root.render(createElement(MeasureTree, { analysis, blocks }))
-    await nextFrames()
-    await ensureFonts()
-    await nextFrames()
+    await settle()
 
     const px = (sel: string): number => {
       const el = host.querySelector(sel) as HTMLElement | null
@@ -178,21 +225,40 @@ async function capturePages(data: OfferExportData): Promise<string[]> {
     const runHeaderH = px('[data-m="rh"]')
     const footerH = px('[data-m="ft"]')
     const heights = blocks.map((_, i) => px(`[data-b="${i}"]`))
+    const gap = analysis.blockGap
 
+    // ---- 2a. Single poster when everything fits a safe height ----
+    const contentH = heights.reduce((a, b) => a + b, 0) + gap * Math.max(0, heights.length - 1)
+    const singleH = fullHeaderH + 4 + contentH + 28 // SingleDocTree top/bottom padding
+    if (!opts.forcePages && singleH <= MAX_SINGLE_H) {
+      root.render(createElement(SingleDocTree, { analysis, blocks }))
+      await settle()
+      const node = host.firstElementChild as HTMLElement | null
+      if (!node) throw new Error('export node failed to render')
+      const captureOpts = {
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        pixelRatio: PIXEL_RATIO,
+        width: node.offsetWidth || PAGE_W,
+        height: node.offsetHeight,
+        fontEmbedCSS,
+      }
+      await toPng(node, captureOpts) // warm pass (settles raster/glyphs)
+      return { urls: [await toPng(node, captureOpts)], paged: false }
+    }
+
+    // ---- 2b. Fixed pages ----
     const firstBudget = PAGE_H - fullHeaderH - footerH - PAGE_SAFETY
     const restBudget = PAGE_H - runHeaderH - footerH - PAGE_SAFETY
-    const pages = paginate(blocks, heights, firstBudget, restBudget)
+    const pages = paginateBalanced(blocks, heights, gap, firstBudget, restBudget)
 
-    // ---- 2. Final paginated render ----
     root.render(createElement(PagesTree, { analysis, pages }))
-    await nextFrames()
-    await ensureFonts()
-    await nextFrames()
+    await settle()
 
     const pageNodes = Array.from(host.querySelectorAll('[data-page]')) as HTMLElement[]
     if (pageNodes.length === 0) throw new Error('export pages failed to render')
 
-    const opts = {
+    const captureOpts = {
       cacheBust: true,
       backgroundColor: '#ffffff',
       pixelRatio: PIXEL_RATIO,
@@ -200,12 +266,10 @@ async function capturePages(data: OfferExportData): Promise<string[]> {
       height: PAGE_H,
       fontEmbedCSS,
     }
-    // Warm pass on the first page (settles layout/raster/glyphs), then keep the
-    // real captures.
-    await toPng(pageNodes[0], opts)
+    await toPng(pageNodes[0], captureOpts) // warm pass
     const urls: string[] = []
-    for (const node of pageNodes) urls.push(await toPng(node, opts))
-    return urls
+    for (const node of pageNodes) urls.push(await toPng(node, captureOpts))
+    return { urls, paged: true }
   } finally {
     root.unmount()
     host.remove()
@@ -216,53 +280,31 @@ async function urlToBlob(url: string): Promise<Blob> {
   return (await fetch(url)).blob()
 }
 
-/** Render the whole offer as one continuous node and capture it as a single image. */
-async function captureSingle(data: OfferExportData): Promise<string> {
-  const [, fontEmbedCSS] = await Promise.all([ensureFonts(), getFontEmbedCss()])
-  const { analysis, blocks } = buildOffer(data)
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-  const host = document.createElement('div')
-  Object.assign(host.style, {
-    position: 'fixed',
-    insetInlineStart: '-100000px',
-    top: '0',
-    width: `${PAGE_W}px`,
-    background: '#ffffff',
-    zIndex: '-1',
-    pointerEvents: 'none',
-  } as CSSStyleDeclaration)
-  document.body.appendChild(host)
-
-  const root = createRoot(host)
-  try {
-    root.render(createElement(SingleDocTree, { analysis, blocks }))
-    await nextFrames()
-    await ensureFonts()
-    await nextFrames()
-
-    const node = host.firstElementChild as HTMLElement | null
-    if (!node) throw new Error('export node failed to render')
-    const cssW = node.offsetWidth || PAGE_W
-    const cssH = node.offsetHeight
-    const opts = { cacheBust: true, backgroundColor: '#ffffff', pixelRatio: PIXEL_RATIO, width: cssW, height: cssH, fontEmbedCSS }
-    await toPng(node, opts) // warm pass
-    return await toPng(node, opts)
-  } finally {
-    root.unmount()
-    host.remove()
-  }
-}
-
-/** Export the offer as a single PNG image (the whole offer in one file). */
-export async function exportOfferPng(data: OfferExportData, filename: string): Promise<void> {
-  const url = await captureSingle(data)
+/**
+ * Export the offer as PNG. One poster image when the offer fits a safe height,
+ * otherwise a numbered page set ("name-1.png", "name-2.png", …).
+ * Returns the number of files written.
+ */
+export async function exportOfferPng(data: OfferExportData, filename: string): Promise<number> {
+  const { urls, paged } = await renderOfferImages(data)
   const base = filename.replace(/\.png$/i, '')
-  downloadBlob(await urlToBlob(url), `${base}.png`)
+  if (!paged || urls.length === 1) {
+    downloadBlob(await urlToBlob(urls[0]), `${base}.png`)
+    return 1
+  }
+  for (let i = 0; i < urls.length; i++) {
+    downloadBlob(await urlToBlob(urls[i]), `${base}-${i + 1}.png`)
+    // Small pause between anchor clicks so browsers don't drop downloads.
+    if (i < urls.length - 1) await delay(180)
+  }
+  return urls.length
 }
 
 /** Export the offer as a clean multi-page A4 PDF (one page per captured page). */
 export async function exportOfferPdf(data: OfferExportData, filename: string): Promise<number> {
-  const urls = await capturePages(data)
+  const { urls } = await renderOfferImages(data, { forcePages: true })
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4', compress: true })
   const w = pdf.internal.pageSize.getWidth()
   const h = pdf.internal.pageSize.getHeight()

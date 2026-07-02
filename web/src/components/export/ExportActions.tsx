@@ -58,8 +58,8 @@ export function ExportActions({
     if (!guard()) return
     setPngBusy(true)
     try {
-      await exportOfferPng(data(), `${safeName}.png`)
-      toast.success(t('export.pngDone'))
+      const n = await exportOfferPng(data(), `${safeName}.png`)
+      toast.success(n > 1 ? t('export.pngDoneMulti', { n }) : t('export.pngDone'))
     } catch {
       toast.error(t('export.pngFail'))
     } finally {
