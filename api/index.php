@@ -60,6 +60,7 @@ $routes = [
     'hotels'         => 'route_hotels',
     'packages'       => 'route_packages',
     'package-hotels' => 'route_package_hotels',
+    'honeymoon'      => 'route_honeymoon',
     'rates'          => 'route_rates',
     'quotes'         => 'route_quotes',
     'quote-items'    => 'route_quote_items',

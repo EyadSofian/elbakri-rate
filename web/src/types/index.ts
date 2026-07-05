@@ -83,6 +83,38 @@ export interface Package {
   rates?: Rate[]
 }
 
+export interface HoneymoonPeriod {
+  id?: number
+  honeymoon_offer_id?: number
+  date_from: string | null
+  date_to: string | null
+  price_label: string | null
+  price: string | number | null
+  currency: Currency
+  notes: string | null
+  sort_order?: number
+}
+
+export interface HoneymoonOffer {
+  id: number
+  hotel_name: string
+  offer_name: string
+  region: string | null
+  features: string | null
+  internal_notes: string | null
+  status: RateStatus
+  created_by?: number | null
+  updated_by?: number | null
+  created_by_name?: string | null
+  updated_by_name?: string | null
+  periods_count?: number
+  first_date?: string | null
+  last_date?: string | null
+  periods?: HoneymoonPeriod[]
+  created_at?: string
+  updated_at?: string
+}
+
 export interface Rate {
   id: number
   hotel_id: number

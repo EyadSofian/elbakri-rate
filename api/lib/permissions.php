@@ -36,7 +36,7 @@ function normalize_nav_tabs($raw): ?array
     if ($raw === null || $raw === '') return null;
     $value = is_array($raw) ? $raw : json_decode((string)$raw, true);
     if (!is_array($value)) return null;
-    $allowed = ['dashboard', 'hotels', 'groups', 'packages', 'sales', 'quotes', 'users', 'system', 'settings'];
+    $allowed = ['dashboard', 'hotels', 'groups', 'packages', 'honeymoon', 'sales', 'quotes', 'users', 'system', 'settings'];
     $out = [];
     foreach ($value as $key) {
         $key = (string)$key;

@@ -12,6 +12,7 @@ import HotelDetailPage from '@/pages/HotelDetailPage'
 import HotelGroupsPage from '@/pages/HotelGroupsPage'
 import PackagesPage from '@/pages/PackagesPage'
 import PackageDetailPage from '@/pages/PackageDetailPage'
+import HoneymoonPage from '@/pages/HoneymoonPage'
 import SalesPage from '@/pages/SalesPage'
 import SalesPackagePage from '@/pages/SalesPackagePage'
 import QuotesPage from '@/pages/QuotesPage'
@@ -47,6 +48,7 @@ export default function App() {
                 <Route path="/hotel-groups" element={<RoleRoute roles={[...opsSales]} navKey="groups"><HotelGroupsPage /></RoleRoute>} />
                 <Route path="/packages" element={<RoleRoute roles={[...opsSales]} navKey="packages"><PackagesPage /></RoleRoute>} />
                 <Route path="/packages/:id" element={<RoleRoute roles={[...opsSales]} navKey="packages"><PackageDetailPage /></RoleRoute>} />
+                <Route path="/honeymoon" element={<RoleRoute roles={['admin', 'operations', 'sales', 'viewer']} navKey="honeymoon"><HoneymoonPage /></RoleRoute>} />
                 <Route path="/sales" element={<RoleRoute roles={['admin', 'operations', 'sales', 'viewer']} navKey="sales"><SalesPage /></RoleRoute>} />
                 <Route path="/sales/packages/:id" element={<RoleRoute roles={['admin', 'operations', 'sales', 'viewer']} navKey="sales"><SalesPackagePage /></RoleRoute>} />
                 <Route path="/quotes" element={<RoleRoute roles={['admin', 'operations', 'sales']} navKey="quotes"><QuotesPage /></RoleRoute>} />
