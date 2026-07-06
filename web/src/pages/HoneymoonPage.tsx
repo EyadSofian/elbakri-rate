@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Badge, RateStatusBadge } from '@/components/ui/badge'
 import { Field, Input, Select, Textarea } from '@/components/ui/inputs'
 import { ConfirmDialog, Modal } from '@/components/ui/modal'
-import { exportHoneymoonPdf, exportHoneymoonPng, honeymoonWhatsAppText } from '@/components/export/HoneymoonExport'
+import { exportHoneymoonPdf, exportHoneymoonPng, honeymoonWhatsAppText } from '@/components/export/HoneymoonStandaloneExport'
 import type { Currency, HoneymoonOffer, HoneymoonPeriod, RateStatus } from '@/types'
 
 const CURRENCIES: Currency[] = ['EGP', 'USD', 'EUR', 'SAR']

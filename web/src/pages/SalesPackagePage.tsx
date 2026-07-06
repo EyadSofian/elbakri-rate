@@ -89,8 +89,10 @@ export default function SalesPackagePage() {
           title={pkg.package_name}
           subtitle={pkg.region}
           notes={pkg.description}
+          features={pkg.description}
           hotelInfo={hotelInfo}
           detailsMode="prices-only"
+          honeymoon={pkg.package_type === 'Honeymoon'}
           fileBase={`elbakri-${pkg.package_name}`}
         />
       </div>

@@ -1,4 +1,4 @@
-import { createElement } from 'react'
+import { createElement, type ComponentType } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
@@ -10,9 +10,37 @@ import {
   SingleDocTree,
   PAGE_W,
   PAGE_H,
+  type OfferAnalysis,
   type OfferExportData,
   type FlowBlock,
 } from '@/components/export/ClientOfferExport'
+import {
+  buildHoneymoon,
+  HoneymoonMeasureTree,
+  HoneymoonPagesTree,
+  HoneymoonSingleTree,
+  type HoneymoonAnalysis,
+} from '@/components/export/HoneymoonExport'
+
+/**
+ * A "document kit" abstracts the one bit that differs between the standard offer
+ * export and the honeymoon brochure: how the data becomes analysis + flow blocks
+ * and which chrome the three off-screen trees render. Everything downstream
+ * (measure → paginate → capture) is identical, so both share one engine.
+ */
+interface DocAnalysis {
+  dir: 'rtl' | 'ltr'
+  blockGap: number
+}
+interface DocKit<A extends DocAnalysis> {
+  build: (data: OfferExportData) => { analysis: A; blocks: FlowBlock[] }
+  Measure: ComponentType<{ analysis: A; blocks: FlowBlock[] }>
+  Single: ComponentType<{ analysis: A; blocks: FlowBlock[] }>
+  Pages: ComponentType<{ analysis: A; pages: FlowBlock[][] }>
+}
+
+const OFFER_KIT: DocKit<OfferAnalysis> = { build: buildOffer, Measure: MeasureTree, Single: SingleDocTree, Pages: PagesTree }
+const HONEYMOON_KIT: DocKit<HoneymoonAnalysis> = { build: buildHoneymoon, Measure: HoneymoonMeasureTree, Single: HoneymoonSingleTree, Pages: HoneymoonPagesTree }
 
 /**
  * Paginated, poster-grade export pipeline.
@@ -188,16 +216,17 @@ export interface OfferRender {
 }
 
 /**
- * Render the offer off-screen, measure it, and capture it as images.
+ * Render a document off-screen, measure it, and capture it as images.
  * `forcePages` (PDF) always paginates; otherwise a single content-fitted
- * poster is produced when the whole offer fits MAX_SINGLE_H.
+ * poster is produced when the whole thing fits MAX_SINGLE_H.
  */
-export async function renderOfferImages(
+async function renderDocumentImages<A extends DocAnalysis>(
+  kit: DocKit<A>,
   data: OfferExportData,
   opts: { forcePages?: boolean } = {},
 ): Promise<OfferRender> {
   const [, fontEmbedCSS] = await Promise.all([ensureFonts(), getFontEmbedCss()])
-  const { analysis, blocks } = buildOffer(data)
+  const { analysis, blocks } = kit.build(data)
 
   const host = document.createElement('div')
   Object.assign(host.style, {
@@ -214,7 +243,7 @@ export async function renderOfferImages(
   const root: Root = createRoot(host)
   try {
     // ---- 1. Measuring pass ----
-    root.render(createElement(MeasureTree, { analysis, blocks }))
+    root.render(createElement(kit.Measure, { analysis, blocks }))
     await settle()
 
     const px = (sel: string): number => {
@@ -231,7 +260,7 @@ export async function renderOfferImages(
     const contentH = heights.reduce((a, b) => a + b, 0) + gap * Math.max(0, heights.length - 1)
     const singleH = fullHeaderH + 4 + contentH + 28 // SingleDocTree top/bottom padding
     if (!opts.forcePages && singleH <= MAX_SINGLE_H) {
-      root.render(createElement(SingleDocTree, { analysis, blocks }))
+      root.render(createElement(kit.Single, { analysis, blocks }))
       await settle()
       const node = host.firstElementChild as HTMLElement | null
       if (!node) throw new Error('export node failed to render')
@@ -252,7 +281,7 @@ export async function renderOfferImages(
     const restBudget = PAGE_H - runHeaderH - footerH - PAGE_SAFETY
     const pages = paginateBalanced(blocks, heights, gap, firstBudget, restBudget)
 
-    root.render(createElement(PagesTree, { analysis, pages }))
+    root.render(createElement(kit.Pages, { analysis, pages }))
     await settle()
 
     const pageNodes = Array.from(host.querySelectorAll('[data-page]')) as HTMLElement[]
@@ -276,19 +305,31 @@ export async function renderOfferImages(
   }
 }
 
+/** Standard offer/hotel/package export (the shared multi-hotel price grid). */
+export function renderOfferImages(data: OfferExportData, opts: { forcePages?: boolean } = {}): Promise<OfferRender> {
+  return renderDocumentImages(OFFER_KIT, data, opts)
+}
+
+/** Honeymoon brochure export (single-subject premium layout). */
+export function renderHoneymoonImages(data: OfferExportData, opts: { forcePages?: boolean } = {}): Promise<OfferRender> {
+  return renderDocumentImages(HONEYMOON_KIT, data, opts)
+}
+
 async function urlToBlob(url: string): Promise<Blob> {
   return (await fetch(url)).blob()
 }
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+type Renderer = (data: OfferExportData, opts?: { forcePages?: boolean }) => Promise<OfferRender>
+
 /**
- * Export the offer as PNG. One poster image when the offer fits a safe height,
+ * Export as PNG. One poster image when the document fits a safe height,
  * otherwise a numbered page set ("name-1.png", "name-2.png", …).
  * Returns the number of files written.
  */
-export async function exportOfferPng(data: OfferExportData, filename: string): Promise<number> {
-  const { urls, paged } = await renderOfferImages(data)
+async function writePng(render: Renderer, data: OfferExportData, filename: string): Promise<number> {
+  const { urls, paged } = await render(data)
   const base = filename.replace(/\.png$/i, '')
   if (!paged || urls.length === 1) {
     downloadBlob(await urlToBlob(urls[0]), `${base}.png`)
@@ -302,9 +343,9 @@ export async function exportOfferPng(data: OfferExportData, filename: string): P
   return urls.length
 }
 
-/** Export the offer as a clean multi-page A4 PDF (one page per captured page). */
-export async function exportOfferPdf(data: OfferExportData, filename: string): Promise<number> {
-  const { urls } = await renderOfferImages(data, { forcePages: true })
+/** Export as a clean multi-page A4 PDF (one page per captured page). */
+async function writePdf(render: Renderer, data: OfferExportData, filename: string): Promise<number> {
+  const { urls } = await render(data, { forcePages: true })
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4', compress: true })
   const w = pdf.internal.pageSize.getWidth()
   const h = pdf.internal.pageSize.getHeight()
@@ -316,3 +357,8 @@ export async function exportOfferPdf(data: OfferExportData, filename: string): P
   pdf.save(filename)
   return urls.length
 }
+
+export const exportOfferPng = (data: OfferExportData, filename: string) => writePng(renderOfferImages, data, filename)
+export const exportOfferPdf = (data: OfferExportData, filename: string) => writePdf(renderOfferImages, data, filename)
+export const exportHoneymoonPng = (data: OfferExportData, filename: string) => writePng(renderHoneymoonImages, data, filename)
+export const exportHoneymoonPdf = (data: OfferExportData, filename: string) => writePdf(renderHoneymoonImages, data, filename)

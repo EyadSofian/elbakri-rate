@@ -26,6 +26,10 @@ export interface OfferExportData {
   phone?: string
   items: Rate[]
   lang?: Lang
+  /** Free-text selling points for the honeymoon brochure (package description).
+   * Split on newline / comma / Arabic comma into feature chips. Ignored by the
+   * standard offer/hotel/package export path. */
+  features?: string | null
   /** 'hotel' forces a hotel-focused offer (no package framing) even if every
    *  rate happens to share one package — used by the Hotel Detail / Hotels-list
    *  exports. 'auto' (default) derives the shape from the rates. */

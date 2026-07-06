@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
 import type { HotelInfo, OfferExportData } from './ClientOfferExport'
-import { exportOfferPng, exportOfferPdf } from '@/lib/exporter'
+import { exportOfferPng, exportOfferPdf, exportHoneymoonPng, exportHoneymoonPdf } from '@/lib/exporter'
 import { api, ApiError } from '@/lib/api'
 import type { Rate } from '@/types'
 
@@ -14,12 +14,14 @@ export function ExportActions({
   title,
   subtitle,
   notes,
+  features,
   reference,
   issuedDate,
   quoteId,
   hotelInfo,
   mode,
   detailsMode,
+  honeymoon = false,
   fileBase = 'elbakri-offer',
   size = 'md',
 }: {
@@ -28,12 +30,16 @@ export function ExportActions({
   title?: string | null
   subtitle?: string | null
   notes?: string | null
+  /** Selling points for the honeymoon brochure (only used when honeymoon). */
+  features?: string | null
   reference?: string | null
   issuedDate?: string | null
   quoteId?: number
   hotelInfo?: Record<number, HotelInfo>
   mode?: 'auto' | 'hotel'
   detailsMode?: OfferExportData['detailsMode']
+  /** Render the premium honeymoon brochure instead of the standard grid. */
+  honeymoon?: boolean
   fileBase?: string
   size?: 'sm' | 'md'
 }) {
@@ -51,14 +57,16 @@ export function ExportActions({
     return true
   }
 
-  const data = (): OfferExportData => ({ items, client, title, subtitle, notes, reference, issuedDate, lang, hotelInfo, mode, detailsMode })
+  const data = (): OfferExportData => ({ items, client, title, subtitle, notes, features, reference, issuedDate, lang, hotelInfo, mode, detailsMode })
   const safeName = (fileBase || 'elbakri-offer').replace(/[\\/:*?"<>|]+/g, '-')
+  const pngExporter = honeymoon ? exportHoneymoonPng : exportOfferPng
+  const pdfExporter = honeymoon ? exportHoneymoonPdf : exportOfferPdf
 
   const png = async () => {
     if (!guard()) return
     setPngBusy(true)
     try {
-      const n = await exportOfferPng(data(), `${safeName}.png`)
+      const n = await pngExporter(data(), `${safeName}.png`)
       toast.success(n > 1 ? t('export.pngDoneMulti', { n }) : t('export.pngDone'))
     } catch {
       toast.error(t('export.pngFail'))
@@ -71,7 +79,7 @@ export function ExportActions({
     if (!guard()) return
     setPdfBusy(true)
     try {
-      await exportOfferPdf(data(), `${safeName}.pdf`)
+      await pdfExporter(data(), `${safeName}.pdf`)
       toast.success(t('export.pdfDone'))
     } catch {
       toast.error(t('export.pdfFail'))
