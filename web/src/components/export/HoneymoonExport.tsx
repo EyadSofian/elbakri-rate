@@ -1,5 +1,27 @@
-import { Fragment, type CSSProperties, type ReactNode } from 'react'
-import { Check, Heart, Phone, Sparkles, Utensils } from 'lucide-react'
+import { Fragment, type CSSProperties } from 'react'
+import {
+  ArrowUpCircle,
+  BedDouble,
+  Bus,
+  Cake,
+  Clock,
+  Coffee,
+  Crown,
+  DoorOpen,
+  Dumbbell,
+  Flower2,
+  Gift,
+  Headphones,
+  Heart,
+  Percent,
+  Phone,
+  Plane,
+  Sparkles,
+  UtensilsCrossed,
+  Waves,
+  Wine,
+  type LucideIcon,
+} from 'lucide-react'
 import { priceNumber, formatDate } from '@/lib/utils'
 import { translate, type Lang } from '@/lib/i18n'
 import { mealLabel, roomLabel } from '@/lib/labels'
@@ -9,23 +31,19 @@ import { ExportLogo } from './ExportLogo'
 import type { Rate } from '@/types'
 
 /**
- * Premium honeymoon-offer brochure export.
+ * Premium honeymoon-offer brochure export — a single-subject travel flyer, not a
+ * data table. Photo-less by design (no image in the data model): the hero is a
+ * decorative navy/gold "HONEYMOON" band. Below it, a bold price badge (or a neat
+ * price table for multi-period offers) and a smart-iconed inclusions list
+ * (each perk mapped to a fitting icon by keyword), then a navy transfer footer.
  *
- * A honeymoon package (package_type = "Honeymoon") is a single-subject offer:
- * one hotel (or a small package of hotels) sold to a couple. It reads badly in
- * the generic multi-hotel room-price grid, so this builds a dedicated brochure:
- *   • navy/gold ELBAKRI identity with a subtle romantic accent (no clutter)
- *   • a compact Period / Price type / Price / Notes table (CSS grid so AR & EN
- *     columns align exactly, empty Notes column dropped rather than dashed)
- *   • a "Features & Details" chip list (one/two columns by count)
- *
- * It mirrors ClientOfferExport's flow-block contract (build → analysis + blocks,
- * plus Measure/Single/Pages trees carrying `data-m`/`data-b`/`data-page`
- * anchors) so it reuses the same measure → paginate → capture engine unchanged.
+ * Mirrors ClientOfferExport's flow-block contract (build → analysis + blocks,
+ * Measure/Single/Pages trees with data-m/data-b/data-page anchors) so it reuses
+ * the same measure → paginate → capture engine unchanged.
  */
 
 /* ------------------------------------------------------------------ *
- *  Palette — shared ELBAKRI navy/gold, with a warm brochure surface.   *
+ *  Palette — shared ELBAKRI navy/gold.                                 *
  * ------------------------------------------------------------------ */
 const PAD_X = 44
 const NAVY = '#07184A'
@@ -33,13 +51,14 @@ const INK = '#0E1A33'
 const GOLD = '#C8A24A'
 const GOLD_DARK = '#A8853B'
 const GOLD_TEXT = '#E5CE93' // gold that stays readable on navy
-const ROW_ALT = '#FBF8F0' // warm zebra tint (vs. the offer's cool grey)
 const SURFACE = '#F8F5EC'
+const DIVIDER = '#ECE6D6' // warm hairline between inclusion rows
 const BORDER = '#E7DFC9'
 const MUTED = '#5A6B86'
 const SUB = '#33508F'
 const FAINT = '#C4CEDE'
 const COMPANY_PHONE = '+20 12 25279820'
+const WORDMARK = 'HONEYMOON'
 
 type Dir = 'rtl' | 'ltr'
 type T = (k: string, vars?: Record<string, string | number>) => string
@@ -60,59 +79,88 @@ function clean(v: string | null | undefined): string | null {
 }
 
 /* ------------------------------------------------------------------ *
- *  Density — comfort ≤4 price rows, compact 5–9, dense 10+.            *
+ *  Smart inclusion icons — first keyword match wins, gold sparkle       *
+ *  fallback. Ordered so specific perks beat generic room/lounge words.  *
+ * ------------------------------------------------------------------ */
+const ICON_RULES: { re: RegExp; Icon: LucideIcon }[] = [
+  { re: /مطار|طيران|flight|airport/i, Icon: Plane },
+  { re: /انتقال|نقل|باص|ترانسفير|transfer|shuttle|\bbus\b/i, Icon: Bus },
+  { re: /%|خصم|discount|off\b/i, Icon: Percent },
+  { re: /سبا|تدليك|مساج|spa|massage/i, Icon: Flower2 },
+  { re: /عشاء|رومانس|dinner|romantic/i, Icon: UtensilsCrossed },
+  { re: /افطار|إفطار|فطار|breakfast/i, Icon: Coffee },
+  { re: /تورت|كيك|cake/i, Icon: Cake },
+  { re: /فواك|فاكه|سلة|هدية|هديه|fruit|basket|gift/i, Icon: Gift },
+  { re: /نبيذ|wine|ميني ?بار|مينى ?بار|minibar|مشروب|عصائر|عصير|\bبار\b|drinks/i, Icon: Wine },
+  { re: /vip|كبار الشخصيات/i, Icon: Crown },
+  { re: /متأخر|مبكر|خروج|تسجيل|check ?-?out|check ?-?in|late|early/i, Icon: Clock },
+  { re: /ديكور|زين|ورود|ورد|بالون|شهر العسل|honeymoon|decor|rose/i, Icon: Heart },
+  { re: /ترقي|upgrade/i, Icon: ArrowUpCircle },
+  { re: /مسبح|ساونا|جاكوز|سكاي|pool|sauna|jacuzzi/i, Icon: Waves },
+  { re: /جيم|رياض|gym|fitness/i, Icon: Dumbbell },
+  { re: /سويت|جناح|غرف|سي ?فيو|room|suite|view/i, Icon: BedDouble },
+  { re: /صالة|لاونج|دخول|lounge|access/i, Icon: DoorOpen },
+  { re: /هاتف|مساعد|phone|assist|concierge/i, Icon: Headphones },
+]
+function featureIcon(text: string): LucideIcon {
+  for (const r of ICON_RULES) if (r.re.test(text)) return r.Icon
+  return Sparkles
+}
+
+/* ------------------------------------------------------------------ *
+ *  Density — comfort ≤10 perks, compact ≤18, dense beyond / multi.     *
  * ------------------------------------------------------------------ */
 export type Density = 'comfort' | 'compact' | 'dense'
 
 interface DTok {
   blockGap: number
   secMb: number
-  headPy: number
-  headFs: number
-  rowPy: number
-  periodFs: number
-  typeFs: number
-  priceFs: number
-  curFs: number
-  noteFs: number
-  nameFs: number
-  badge: number
-  badgeFs: number
-  badgeR: number
-  chipFs: number
-  chipPy: number
-  featFs: number
   radius: number
+  wordmarkFs: number
+  pillFs: number
+  heroPy: number
+  capFs: number
+  badgePeriodFs: number
+  badgePriceFs: number
+  badgePy: number
+  featRowPy: number
+  featFs: number
+  featIcon: number
+  featIconSize: number
+  headFs: number
+  cellFs: number
+  tPriceFs: number
+  rowPy: number
+  footFs: number
+  nameFs: number
 }
 
 const DENS: Record<Density, DTok> = {
-  comfort: { blockGap: 18, secMb: 9, headPy: 9, headFs: 12.5, rowPy: 9, periodFs: 13, typeFs: 12.5, priceFs: 18, curFs: 11, noteFs: 11.5, nameFs: 21, badge: 30, badgeFs: 14, badgeR: 9, chipFs: 12, chipPy: 4, featFs: 12.5, radius: 13 },
-  compact: { blockGap: 13, secMb: 7, headPy: 7, headFs: 11.5, rowPy: 6.5, periodFs: 12, typeFs: 11.5, priceFs: 15.5, curFs: 10, noteFs: 11, nameFs: 18.5, badge: 26, badgeFs: 13, badgeR: 8, chipFs: 11.5, chipPy: 3, featFs: 11.5, radius: 11 },
-  dense: { blockGap: 10, secMb: 5, headPy: 5, headFs: 10.5, rowPy: 4.5, periodFs: 11, typeFs: 10.5, priceFs: 13.5, curFs: 9.5, noteFs: 10.5, nameFs: 16.5, badge: 22, badgeFs: 12, badgeR: 7, chipFs: 10.5, chipPy: 2.5, featFs: 11, radius: 9 },
+  comfort: { blockGap: 16, secMb: 10, radius: 14, wordmarkFs: 30, pillFs: 13, heroPy: 22, capFs: 12.5, badgePeriodFs: 14, badgePriceFs: 40, badgePy: 15, featRowPy: 8.5, featFs: 13.5, featIcon: 34, featIconSize: 17, headFs: 12.5, cellFs: 12.5, tPriceFs: 16.5, rowPy: 7, footFs: 12, nameFs: 30 },
+  compact: { blockGap: 12, secMb: 8, radius: 12, wordmarkFs: 26, pillFs: 12, heroPy: 18, capFs: 12, badgePeriodFs: 13, badgePriceFs: 34, badgePy: 12, featRowPy: 6.2, featFs: 12.5, featIcon: 30, featIconSize: 15, headFs: 11.5, cellFs: 11.5, tPriceFs: 15, rowPy: 5.5, footFs: 11.5, nameFs: 26 },
+  dense: { blockGap: 9, secMb: 6, radius: 10, wordmarkFs: 22, pillFs: 11, heroPy: 14, capFs: 11, badgePeriodFs: 12, badgePriceFs: 28, badgePy: 10, featRowPy: 4.6, featFs: 11.5, featIcon: 26, featIconSize: 13, headFs: 10.5, cellFs: 10.5, tPriceFs: 13.5, rowPy: 4.5, footFs: 11, nameFs: 22 },
 }
 
-function pickDensity(rows: number): Density {
-  if (rows >= 10) return 'dense'
-  if (rows >= 5) return 'compact'
+function pickDensity(features: number, hotels: number, periodRows: number): Density {
+  if (features >= 18 || periodRows >= 12 || hotels >= 4) return 'dense'
+  if (features >= 11 || periodRows >= 6 || hotels >= 2) return 'compact'
   return 'comfort'
 }
 
-function heroTitleSize(title: string): number {
-  const n = title.length
-  if (n > 50) return 22
-  if (n > 34) return 26
-  if (n > 22) return 30
-  return 34
+function heroNameSize(name: string): number {
+  const n = name.length
+  if (n > 42) return 24
+  if (n > 30) return 28
+  if (n > 20) return 32
+  return 36
 }
-
 function sectionNameSize(name: string, D: DTok): number {
-  if (name.length > 40) return D.nameFs - 4
-  if (name.length > 28) return D.nameFs - 2
+  if (name.length > 40) return D.nameFs - 5
+  if (name.length > 28) return D.nameFs - 3
   return D.nameFs
 }
 
-/** "01/07 – 31/08/2026" — drops the redundant start-year when both dates share
- *  it so period cells stay short. Digits render LTR via `.nums`. */
+/** "01/06 – 31/10/2026" — drops the redundant start-year when shared. */
 const DMY = /^\d{2}\/\d{2}\/\d{4}$/
 function compactRange(from: string | null, to: string | null, allLabel: string): string {
   if (!from && !to) return allLabel
@@ -122,8 +170,7 @@ function compactRange(from: string | null, to: string | null, allLabel: string):
   return `${sameYear ? f.slice(0, 5) : f} – ${t}`
 }
 
-/** Split the package description into feature chips (newline / comma / Arabic
- *  comma / bullet), trimming blanks so empty descriptions render nothing. */
+/** Split the package description into perks (newline / comma / Arabic comma). */
 function splitFeatures(raw: string | null | undefined): string[] {
   if (!raw) return []
   return raw
@@ -140,19 +187,15 @@ export interface HoneymoonAnalysis {
   dir: Dir
   t: T
   density: Density
-  /** Gap between flow blocks — the paginator must use the same value. */
   blockGap: number
   hotelCount: number
-  resolvedTitle: string
-  resolvedSubtitle: string | null
-  /** When the offer is one standalone hotel, the hero already names it, so the
-   *  hotel sections don't repeat the name. */
-  headlineIsHotel: boolean
+  heroName: string
+  heroRegion: string | null
+  heroCaption: string | null
   today: string
   phone: string
   client: string | null
-  /** "All prices in EGP · per person" line for the terms footer (null when
-   *  currencies/bases are mixed). */
+  transferLine: string | null
   pricesLine: string | null
 }
 
@@ -165,25 +208,36 @@ export function buildHoneymoon(data: OfferExportData): { analysis: HoneymoonAnal
   const shape = describeOffer(items)
   const groups = shape.groups
   const hotelCount = groups.length
-  const isPackageOffer = shape.isPackageOffer
-  const singleHotel = shape.singleHotel
+  const oneHotel = hotelCount === 1
 
-  const totalRows = groups.reduce((n, g) => n + g.periods.reduce((m, p) => m + p.rates.length, 0), 0)
-  const density = pickDensity(totalRows)
+  const feats = splitFeatures(data.features)
+  const periodRows = groups.reduce((n, g) => n + g.periods.reduce((m, p) => m + p.rates.length, 0), 0)
+  const density = pickDensity(feats.length, hotelCount, periodRows)
 
-  const resolvedTitle =
-    clean(data.title) ||
-    (isPackageOffer ? clean(shape.packageName) : null) ||
-    (singleHotel ? clean(singleHotel.name) : null) ||
-    t('honeymoon.badge')
+  const packageName = clean(shape.packageName) || clean(data.title)
+  const heroName = (oneHotel ? clean(groups[0].name) : packageName) || packageName || t('honeymoon.badge')
+  const heroRegion = oneHotel
+    ? [groups[0].region, groups[0].subRegion].filter(Boolean).join(' · ') || clean(data.subtitle)
+    : clean(data.subtitle)
 
-  const subtitleBase =
-    data.subtitle ??
-    (singleHotel ? [singleHotel.region, singleHotel.subRegion].filter(Boolean).join(' · ') || null : null)
-  const countLabel = isPackageOffer && hotelCount >= 3 ? t('export.hotelsCount', { n: hotelCount }) : null
-  const resolvedSubtitle = [subtitleBase, countLabel].filter(Boolean).join(' · ') || null
+  // Shared meal + duration caption for the hero (only when consistent).
+  const meals = Array.from(new Set(items.map((r) => r.meal_plan)))
+  const sharedMeal = meals.length === 1 ? meals[0] : null
+  const nightsSet = Array.from(new Set(items.map((r) => r.nights).filter((n): n is number => !!n)))
+  const daysSet = Array.from(new Set(items.map((r) => r.days).filter((n): n is number => !!n)))
+  const nights = nightsSet.length === 1 ? nightsSet[0] : null
+  const days = daysSet.length === 1 ? daysSet[0] : null
+  const capParts: string[] = []
+  if (sharedMeal) capParts.push(mealLabel(sharedMeal, lang))
+  if (nights) capParts.push(`${nights} ${t('honeymoon.nights')}`)
+  if (days) capParts.push(`${days} ${t('honeymoon.days')}`)
+  const heroCaption = capParts.length ? capParts.join(' · ') : null
 
-  // One offer-wide currency/basis statement (goes in the terms footer).
+  // Shared transfer line for the footer (when one transfer detail applies).
+  const transfers = Array.from(new Set(items.map((r) => clean(r.transfer_details)).filter(Boolean))) as string[]
+  const transferLine = transfers.length === 1 ? transfers[0] : null
+
+  // Offer-wide currency/basis statement for the terms footer.
   const currencies = Array.from(new Set(items.map((r) => r.currency)))
   const bases = Array.from(new Set(items.map((r) => r.pricing_basis)))
   const curLabel = currencies.length === 1 ? t(`currency.${currencies[0]}`) : null
@@ -199,113 +253,59 @@ export function buildHoneymoon(data: OfferExportData): { analysis: HoneymoonAnal
     density,
     blockGap: DENS[density].blockGap,
     hotelCount,
-    resolvedTitle,
-    resolvedSubtitle,
-    headlineIsHotel: !!singleHotel,
+    heroName,
+    heroRegion: heroRegion || null,
+    heroCaption,
     today: formatDate(new Date().toISOString()),
     phone: data.phone?.trim() || COMPANY_PHONE,
     client: clean(data.client),
+    transferLine,
     pricesLine,
   }
 
   const blocks: FlowBlock[] = []
   groups.forEach((g, i) => {
     blocks.push({
-      key: `hotel-${g.hotelId ?? g.name}-${i}`,
+      key: `price-${g.hotelId ?? g.name}-${i}`,
       keepWithNext: false,
-      node: (
-        <HotelBlock
-          group={g}
-          index={i + 1}
-          showName={!analysis.headlineIsHotel}
-          numbered={hotelCount > 1}
-          density={density}
-          lang={lang}
-          t={t}
-        />
-      ),
+      node: <PriceBlock group={g} index={i + 1} numbered={hotelCount > 1} density={density} lang={lang} t={t} />,
     })
   })
-
-  const feats = splitFeatures(data.features)
   if (feats.length) {
-    blocks.push({ key: 'features', keepWithNext: false, node: <FeaturesBlock items={feats} density={density} t={t} /> })
+    blocks.push({ key: 'features', keepWithNext: false, node: <InclusionsBlock items={feats} density={density} t={t} /> })
   }
-
   blocks.push({ key: 'terms', keepWithNext: false, node: <TermsBlock analysis={analysis} /> })
 
   return { analysis, blocks }
 }
 
 /* ------------------------------------------------------------------ *
- *  Row model — flatten a hotel's periods × rooms into table rows.      *
+ *  Price block — one big navy badge for a single period, else a neat   *
+ *  navy-headed price table. Multi-hotel offers get a numbered name.    *
  * ------------------------------------------------------------------ */
-interface Row {
+interface PriceRow {
   key: string
   period: string
-  showPeriod: boolean
-  type: string
+  room: string
+  meal: Rate['meal_plan']
   price: string
   cur: string
-  note: string | null
 }
 
-/** Prefer a short booking note, else the transfer detail — kept concise so the
- *  Notes column never stretches a row. Long child policies stay out of it. */
-function pickNote(r: Rate): string | null {
-  return clean(r.booking_notes) || clean(r.transfer_details)
-}
-
-function hotelRows(g: HotelGroup, sharedMeal: boolean, allLabel: string, lang: Lang): { rows: Row[]; hasNotes: boolean } {
-  const rows: Row[] = []
-  let hasNotes = false
+function priceRows(g: HotelGroup, allLabel: string): PriceRow[] {
+  const rows: PriceRow[] = []
   for (const p of g.periods) {
     const sorted = [...p.rates].sort((a, b) => roomRank(a.room_type) - roomRank(b.room_type))
-    const periodText = compactRange(p.from, p.to, allLabel)
-    sorted.forEach((r, idx) => {
-      const type = sharedMeal ? roomLabel(r.room_type, lang) : `${roomLabel(r.room_type, lang)} · ${mealLabel(r.meal_plan, lang)}`
-      const note = pickNote(r)
-      if (note) hasNotes = true
-      rows.push({ key: `${p.key}-${r.id}`, period: periodText, showPeriod: idx === 0, type, price: priceNumber(r.adult_price), cur: r.currency, note })
-    })
+    for (const r of sorted) {
+      rows.push({ key: `${p.key}-${r.id}`, period: compactRange(p.from, p.to, allLabel), room: r.room_type, meal: r.meal_plan, price: priceNumber(r.adult_price), cur: r.currency })
+    }
   }
-  return { rows, hasNotes }
+  return rows
 }
 
-/* ------------------------------------------------------------------ *
- *  Hotel section — optional name/meal row + the Period/Type/Price/Note *
- *  table (CSS grid, not <table>, so header + body share column tracks).*
- * ------------------------------------------------------------------ */
-function headCell(D: DTok, justify: 'flex-start' | 'center'): CSSProperties {
-  return {
-    padding: `${D.headPy}px 11px`,
-    fontSize: D.headFs,
-    fontWeight: 700,
-    color: '#ffffff',
-    background: NAVY,
-    boxShadow: `inset 0 -2px 0 ${GOLD}`, // gold seam under the header row
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: justify,
-  }
-}
-
-function MealChip({ meal, D, lang }: { meal: Rate['meal_plan']; D: DTok; lang: Lang }) {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: SURFACE, border: `1px solid ${GOLD}`, borderRadius: 999, padding: `${D.chipPy}px 10px`, fontSize: D.chipFs, fontWeight: 700, color: NAVY, flexShrink: 0, whiteSpace: 'nowrap' }}>
-      <Utensils style={{ width: D.chipFs + 1, height: D.chipFs + 1, color: GOLD_DARK, flexShrink: 0 }} />
-      {mealLabel(meal, lang)}
-    </span>
-  )
-}
-
-function HotelBlock({
+function PriceBlock({
   group,
   index,
-  showName,
   numbered,
   density,
   lang,
@@ -313,80 +313,88 @@ function HotelBlock({
 }: {
   group: HotelGroup
   index: number
-  showName: boolean
   numbered: boolean
   density: Density
   lang: Lang
   t: T
 }) {
   const D = DENS[density]
-  const meals = Array.from(new Set(group.periods.map((p) => p.meal)))
-  const sharedMeal = meals.length === 1 ? meals[0] : null
-  const { rows, hasNotes } = hotelRows(group, !!sharedMeal, t('export.allPeriods'), lang)
+  const rows = priceRows(group, t('export.allPeriods'))
+  const distinctRooms = new Set(rows.map((r) => r.room)).size
+  const distinctMeals = new Set(rows.map((r) => r.meal)).size
+  const showType = distinctRooms > 1 || distinctMeals > 1
 
-  const cols = hasNotes
-    ? 'minmax(0, 1.4fr) minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1.75fr)'
-    : 'minmax(0, 1.5fr) minmax(0, 1.5fr) minmax(0, 1fr)'
+  const nameRow = numbered ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: D.secMb }}>
+      <span className="nums" style={{ display: 'inline-grid', placeItems: 'center', width: D.featIcon, height: D.featIcon, borderRadius: 8, background: NAVY, color: GOLD_TEXT, fontSize: D.featFs, fontWeight: 800, flexShrink: 0 }}>
+        {index}
+      </span>
+      <h2 style={{ margin: 0, fontSize: sectionNameSize(group.name, D), fontWeight: 800, color: NAVY, lineHeight: 1.18 }}>{group.name}</h2>
+      {(group.region || group.subRegion) && (
+        <span style={{ fontSize: D.cellFs, fontWeight: 600, color: MUTED }}>{[group.region, group.subRegion].filter(Boolean).join(' · ')}</span>
+      )}
+      <span style={{ flex: '1 1 24px', minWidth: 24, height: 2, borderRadius: 999, background: GOLD, opacity: 0.35 }} />
+    </div>
+  ) : null
 
-  const cell = (bg: string, bt: string | undefined): CSSProperties => ({
-    padding: `${D.rowPy}px 11px`,
-    background: bg,
-    borderTop: bt,
+  // Single price → hero-style badge.
+  if (rows.length === 1) {
+    const r = rows[0]
+    return (
+      <section>
+        {nameRow}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div style={{ position: 'relative', background: NAVY, borderRadius: D.radius + 2, padding: `${D.badgePy}px 44px`, textAlign: 'center', minWidth: 360, boxShadow: `inset 0 0 0 2px ${GOLD}` }}>
+            <div className="nums" style={{ fontSize: D.badgePeriodFs, fontWeight: 700, color: GOLD_TEXT, letterSpacing: 0.3 }}>{r.period}</div>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 8, marginTop: 4 }}>
+              <span className="nums" style={{ fontSize: D.badgePriceFs, fontWeight: 800, color: GOLD, lineHeight: 1 }}>{r.price}</span>
+              <span style={{ fontSize: Math.round(D.badgePriceFs * 0.4), fontWeight: 700, color: GOLD_TEXT }}>{r.cur}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // Multiple prices → compact styled table.
+  const cols = showType ? 'minmax(0,1.5fr) minmax(0,1.4fr) minmax(0,1fr)' : 'minmax(0,1.7fr) minmax(0,1fr)'
+  const head = (label: string, justify: 'flex-start' | 'center'): CSSProperties => ({
+    padding: `${D.rowPy + 1}px 12px`,
+    fontSize: D.headFs,
+    fontWeight: 700,
+    color: '#fff',
+    background: NAVY,
+    boxShadow: `inset 0 -2px 0 ${GOLD}`,
     display: 'flex',
     alignItems: 'center',
+    justifyContent: justify,
+    whiteSpace: 'nowrap',
   })
+  const cell = (bg: string, bt?: string): CSSProperties => ({ padding: `${D.rowPy}px 12px`, background: bg, borderTop: bt, display: 'flex', alignItems: 'center' })
 
   return (
     <section>
-      {showName ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: D.secMb, flexWrap: 'wrap' }}>
-          {numbered && (
-            <span className="nums" style={{ display: 'inline-grid', placeItems: 'center', width: D.badge, height: D.badge, borderRadius: D.badgeR, background: NAVY, color: GOLD_TEXT, fontSize: D.badgeFs, fontWeight: 800, flexShrink: 0 }}>
-              {index}
-            </span>
-          )}
-          <h2 style={{ margin: 0, fontSize: sectionNameSize(group.name, D), fontWeight: 800, color: NAVY, lineHeight: 1.18, wordBreak: 'break-word' }}>
-            {group.name}
-          </h2>
-          {sharedMeal && <MealChip meal={sharedMeal} D={D} lang={lang} />}
-          {(group.region || group.subRegion) && (
-            <span style={{ fontSize: D.chipFs + 0.5, fontWeight: 600, color: MUTED }}>
-              {[group.region, group.subRegion].filter(Boolean).join(' · ')}
-            </span>
-          )}
-          <span style={{ flex: '1 1 28px', minWidth: 28, height: 2, borderRadius: 999, background: GOLD, opacity: 0.35 }} />
-        </div>
-      ) : sharedMeal ? (
-        <div style={{ display: 'flex', marginBottom: D.secMb }}>
-          <MealChip meal={sharedMeal} D={D} lang={lang} />
-        </div>
-      ) : null}
-
+      {nameRow}
       <div style={{ border: `1px solid ${BORDER}`, borderRadius: D.radius, overflow: 'hidden' }}>
         <div style={{ display: 'grid', gridTemplateColumns: cols }}>
-          <div style={headCell(D, 'flex-start')}>{t('export.period')}</div>
-          <div style={headCell(D, 'flex-start')}>{t('honeymoon.priceType')}</div>
-          <div style={headCell(D, 'center')}>{t('honeymoon.price')}</div>
-          {hasNotes && <div style={headCell(D, 'flex-start')}>{t('honeymoon.notes')}</div>}
-
-          {rows.map((row, i) => {
-            const bg = i % 2 ? ROW_ALT : '#ffffff'
+          <div style={head(t('export.period'), 'flex-start')}>{t('export.period')}</div>
+          {showType && <div style={head(t('honeymoon.priceType'), 'flex-start')}>{t('honeymoon.priceType')}</div>}
+          <div style={head(t('honeymoon.price'), 'center')}>{t('honeymoon.price')}</div>
+          {rows.map((r, i) => {
+            const bg = i % 2 ? '#FBF8F0' : '#ffffff'
             const bt = i === 0 ? undefined : `1px solid ${BORDER}`
             return (
-              <Fragment key={row.key}>
-                <div className="nums" style={{ ...cell(bg, bt), fontSize: D.periodFs, fontWeight: 700, color: SUB, whiteSpace: 'nowrap' }}>
-                  {row.showPeriod ? row.period : ''}
-                </div>
-                <div style={{ ...cell(bg, bt), fontSize: D.typeFs, fontWeight: 700, color: INK }}>{row.type}</div>
-                <div className="nums" style={{ ...cell(bg, bt), justifyContent: 'center', gap: 4 }}>
-                  <span style={{ fontSize: D.priceFs, fontWeight: 800, color: row.price === '—' ? FAINT : NAVY }}>{row.price}</span>
-                  {row.price !== '—' && <span style={{ fontSize: D.curFs, fontWeight: 700, color: GOLD_DARK }}>{row.cur}</span>}
-                </div>
-                {hasNotes && (
-                  <div style={{ ...cell(bg, bt), fontSize: D.noteFs, fontWeight: 500, color: MUTED, lineHeight: 1.4 }}>
-                    {row.note ?? ''}
+              <Fragment key={r.key}>
+                <div className="nums" style={{ ...cell(bg, bt), fontSize: D.cellFs, fontWeight: 700, color: SUB, whiteSpace: 'nowrap' }}>{r.period}</div>
+                {showType && (
+                  <div style={{ ...cell(bg, bt), fontSize: D.cellFs, fontWeight: 700, color: INK }}>
+                    {roomLabel(r.room, lang)}{distinctMeals > 1 ? ` · ${mealLabel(r.meal, lang)}` : ''}
                   </div>
                 )}
+                <div className="nums" style={{ ...cell(bg, bt), justifyContent: 'center', gap: 4 }}>
+                  <span style={{ fontSize: D.tPriceFs, fontWeight: 800, color: r.price === '—' ? FAINT : NAVY }}>{r.price}</span>
+                  {r.price !== '—' && <span style={{ fontSize: Math.round(D.tPriceFs * 0.66), fontWeight: 700, color: GOLD_DARK }}>{r.cur}</span>}
+                </div>
               </Fragment>
             )
           })}
@@ -397,37 +405,50 @@ function HotelBlock({
 }
 
 /* ------------------------------------------------------------------ *
- *  Features — chip list, one column ≤4 items, two columns beyond.      *
+ *  Inclusions — one perk per row: navy icon disc + text + hairline.    *
  * ------------------------------------------------------------------ */
-function FeaturesBlock({ items, density, t }: { items: string[]; density: Density; t: T }) {
+function InclusionsBlock({ items, density, t }: { items: string[]; density: Density; t: T }) {
   const D = DENS[density]
-  const twoCol = items.length > 4
   return (
-    <div style={{ border: `1px solid ${BORDER}`, borderRadius: D.radius, background: SURFACE, padding: '13px 16px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9 }}>
-        <Sparkles style={{ width: 16, height: 16, color: GOLD_DARK, flexShrink: 0 }} />
-        <span style={{ fontSize: D.featFs + 1.5, fontWeight: 800, color: NAVY }}>{t('honeymoon.features')}</span>
-        <span style={{ flex: 1, height: 2, borderRadius: 999, background: GOLD, opacity: 0.3 }} />
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: D.secMb }}>
+        <span style={{ flex: 1, height: 2, borderRadius: 999, background: GOLD, opacity: 0.35 }} />
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: D.featFs + 2, fontWeight: 800, color: NAVY, whiteSpace: 'nowrap' }}>
+          <Sparkles style={{ width: 16, height: 16, color: GOLD_DARK }} />
+          {t('honeymoon.features')}
+        </span>
+        <span style={{ flex: 1, height: 2, borderRadius: 999, background: GOLD, opacity: 0.35 }} />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: twoCol ? '1fr 1fr' : '1fr', columnGap: 22, rowGap: 6 }}>
-        {items.map((f, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: D.featFs, color: INK, lineHeight: 1.45 }}>
-            <Check style={{ width: 14, height: 14, color: GOLD_DARK, marginTop: 2, flexShrink: 0 }} />
-            <span>{f}</span>
-          </div>
-        ))}
+      <div style={{ border: `1px solid ${BORDER}`, borderRadius: D.radius, overflow: 'hidden', background: '#fff' }}>
+        {items.map((f, i) => {
+          const Icon = featureIcon(f)
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: `${D.featRowPy}px 14px`, background: i % 2 ? SURFACE : '#ffffff', borderTop: i === 0 ? undefined : `1px solid ${DIVIDER}` }}>
+              <span style={{ width: D.featIcon, height: D.featIcon, borderRadius: 999, background: NAVY, display: 'inline-grid', placeItems: 'center', flexShrink: 0, boxShadow: `inset 0 0 0 1.5px ${GOLD}` }}>
+                <Icon style={{ width: D.featIconSize, height: D.featIconSize, color: '#fff' }} strokeWidth={2} />
+              </span>
+              <span style={{ fontSize: D.featFs, fontWeight: 600, color: INK, lineHeight: 1.35 }}>{f}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
 /* ------------------------------------------------------------------ *
- *  Terms — navy footer band with phone + terms line.                   *
+ *  Terms — navy footer with transfer line + phone + terms.             *
  * ------------------------------------------------------------------ */
 function TermsBlock({ analysis }: { analysis: HoneymoonAnalysis }) {
-  const { t, phone, today, pricesLine } = analysis
+  const { t, phone, today, pricesLine, transferLine } = analysis
   return (
-    <div style={{ background: NAVY, color: '#ffffff', borderRadius: 12, padding: '13px 18px', boxShadow: `inset 0 -3px 0 ${GOLD}` }}>
+    <div style={{ background: NAVY, color: '#ffffff', borderRadius: 14, padding: '13px 18px', boxShadow: `inset 0 -3px 0 ${GOLD}` }}>
+      {transferLine && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.16)' }}>
+          <Bus style={{ width: 18, height: 18, color: GOLD, flexShrink: 0 }} />
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: '#EAF0FB' }}>{transferLine}</span>
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 11.5, lineHeight: 1.7, color: '#AEBFDD' }}>
           {pricesLine && <div style={{ color: GOLD_TEXT, fontWeight: 700 }}>• {pricesLine}</div>}
@@ -449,47 +470,53 @@ function TermsBlock({ analysis }: { analysis: HoneymoonAnalysis }) {
 }
 
 /* ------------------------------------------------------------------ *
- *  Page chrome — brand row (logo locked LEFT), romantic hero band,     *
- *  slim running header + footer.                                       *
+ *  Page chrome — brand row (logo left) + decorative HONEYMOON hero.    *
  * ------------------------------------------------------------------ */
 export function HoneymoonHeaderFull({ analysis }: { analysis: HoneymoonAnalysis }) {
-  const { dir, t, resolvedTitle, resolvedSubtitle, client, today } = analysis
+  const { dir, t, heroName, heroRegion, heroCaption, client, today, density } = analysis
+  const D = DENS[density]
   return (
     <div style={{ padding: `20px ${PAD_X}px 10px` }}>
       {/* Direction-locked LTR so the logo sits physically LEFT for Arabic too. */}
-      <div style={{ direction: 'ltr', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20 }}>
-        <ExportLogo height={54} />
-        <div style={{ direction: dir, textAlign: 'end' }}>
-          <span style={{ display: 'inline-block', border: `1.5px solid ${GOLD}`, color: NAVY, background: '#fff', fontSize: 12, fontWeight: 800, letterSpacing: dir === 'rtl' ? 0 : 1, padding: '4px 14px', borderRadius: 999, textTransform: dir === 'rtl' ? 'none' : 'uppercase', whiteSpace: 'nowrap' }}>
-            {t('honeymoon.badge')}
-          </span>
-          <div style={{ marginTop: 6, fontSize: 12, color: MUTED, fontWeight: 600 }}>
-            {client ? (
-              <>
-                {t('export.presentedTo')}: <span style={{ color: NAVY, fontWeight: 800 }}>{client}</span>
-              </>
-            ) : (
-              <>
-                {t('export.issued')}: <span className="nums">{today}</span>
-              </>
-            )}
-          </div>
+      <div style={{ direction: 'ltr', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, marginBottom: 12 }}>
+        <ExportLogo h={50} />
+        <div style={{ direction: dir, textAlign: 'end', fontSize: 12, color: MUTED, fontWeight: 600 }}>
+          {client ? (
+            <>
+              {t('export.presentedTo')}: <span style={{ color: NAVY, fontWeight: 800 }}>{client}</span>
+            </>
+          ) : (
+            <>
+              {t('export.issued')}: <span className="nums">{today}</span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Hero band — subtle heart motif, romantic eyebrow, responsive title. */}
-      <div style={{ direction: dir, position: 'relative', overflow: 'hidden', marginTop: 13, background: NAVY, borderRadius: 16, padding: '18px 24px', textAlign: 'center', boxShadow: `inset 0 -3px 0 ${GOLD}` }}>
-        <Heart style={{ position: 'absolute', insetInlineEnd: -14, top: -14, width: 96, height: 96, color: GOLD, opacity: 0.08 }} />
-        <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 7 }}>
-          <span style={{ width: 30, height: 2, borderRadius: 999, background: GOLD, opacity: 0.6 }} />
-          <Heart style={{ width: 15, height: 15, color: GOLD_TEXT }} />
-          <span style={{ width: 30, height: 2, borderRadius: 999, background: GOLD, opacity: 0.6 }} />
+      {/* HERO — navy band, gold double frame, HONEYMOON wordmark, name. */}
+      <div style={{ direction: dir, position: 'relative', overflow: 'hidden', background: NAVY, borderRadius: 18, padding: `${D.heroPy}px 26px ${D.heroPy + 2}px`, textAlign: 'center', boxShadow: `inset 0 0 0 2px ${GOLD}` }}>
+        <div style={{ position: 'absolute', inset: 8, border: '1px solid rgba(200,162,74,0.38)', borderRadius: 12, pointerEvents: 'none' }} />
+        <Plane style={{ position: 'absolute', insetInlineStart: 20, top: 16, width: 22, height: 22, color: GOLD, opacity: 0.55 }} />
+        <Plane style={{ position: 'absolute', insetInlineEnd: 20, top: 16, width: 22, height: 22, color: GOLD, opacity: 0.55, transform: 'scaleX(-1)' }} />
+
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+          <Heart style={{ width: 15, height: 15, color: GOLD }} strokeWidth={2.5} />
+          <span style={{ fontFamily: '"Space Grotesk", Cairo, sans-serif', fontSize: D.wordmarkFs, fontWeight: 800, letterSpacing: 6, color: GOLD }}>{WORDMARK}</span>
+          <Heart style={{ width: 15, height: 15, color: GOLD }} strokeWidth={2.5} />
         </div>
-        <h1 style={{ position: 'relative', margin: 0, fontSize: heroTitleSize(resolvedTitle), fontWeight: 800, color: '#ffffff', lineHeight: 1.2, wordBreak: 'break-word' }}>
-          {resolvedTitle}
+
+        {heroRegion && (
+          <div style={{ position: 'relative', marginTop: 9, display: 'inline-block', border: `1.5px solid ${GOLD}`, borderRadius: 999, padding: '3px 18px', fontSize: D.pillFs, fontWeight: 800, color: '#fff', letterSpacing: dir === 'rtl' ? 0 : 1.2 }}>
+            {heroRegion}
+          </div>
+        )}
+
+        <h1 style={{ position: 'relative', margin: '9px 0 0', fontSize: heroNameSize(heroName), fontWeight: 800, color: '#ffffff', lineHeight: 1.18, wordBreak: 'break-word' }}>
+          {heroName}
         </h1>
-        {resolvedSubtitle && (
-          <div style={{ position: 'relative', marginTop: 4, fontSize: 13.5, fontWeight: 700, color: GOLD_TEXT }}>{resolvedSubtitle}</div>
+
+        {heroCaption && (
+          <div className="nums" style={{ position: 'relative', marginTop: 5, fontSize: D.capFs, fontWeight: 700, color: GOLD_TEXT }}>{heroCaption}</div>
         )}
       </div>
     </div>
@@ -497,13 +524,13 @@ export function HoneymoonHeaderFull({ analysis }: { analysis: HoneymoonAnalysis 
 }
 
 export function HoneymoonRunningHeader({ analysis }: { analysis: HoneymoonAnalysis }) {
-  const { dir, t, resolvedTitle } = analysis
+  const { dir, heroName } = analysis
   return (
     <div style={{ padding: `14px ${PAD_X}px 8px` }}>
       <div style={{ direction: 'ltr', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18 }}>
-        <ExportLogo height={34} />
+        <ExportLogo h={34} />
         <div style={{ direction: dir, maxWidth: 620, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13, fontWeight: 700, color: SUB }}>
-          {t('honeymoon.badge')} · {resolvedTitle}
+          <span style={{ fontFamily: '"Space Grotesk", Cairo, sans-serif', color: GOLD_DARK, letterSpacing: 2 }}>{WORDMARK}</span> · {heroName}
         </div>
       </div>
       <div style={{ height: 2, background: GOLD, borderRadius: 999, marginTop: 9 }} />
@@ -528,8 +555,7 @@ export function PageFooter({ analysis, page }: { analysis: HoneymoonAnalysis; pa
 
 /* ------------------------------------------------------------------ *
  *  Off-screen render trees — same measurement contract as the offer    *
- *  exporter (data-m / data-b / data-page anchors), consumed unchanged  *
- *  by the shared exporter engine.                                      *
+ *  exporter (data-m / data-b / data-page anchors).                     *
  * ------------------------------------------------------------------ */
 const pageStyle: CSSProperties = {
   width: PAGE_W,

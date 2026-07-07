@@ -133,9 +133,29 @@ function nextFrames(): Promise<void> {
   )
 }
 
-async function settle(): Promise<void> {
+async function ensureImages(host: HTMLElement): Promise<void> {
+  const imgs = Array.from(host.querySelectorAll('img'))
+  await Promise.all(
+    imgs.map(async (img) => {
+      if (!(img.complete && img.naturalWidth > 0)) {
+        await new Promise<void>((resolve) => {
+          img.addEventListener('load', () => resolve(), { once: true })
+          img.addEventListener('error', () => resolve(), { once: true })
+        })
+      }
+      try {
+        await img.decode()
+      } catch {
+        /* best effort */
+      }
+    }),
+  )
+}
+
+async function settle(host?: HTMLElement): Promise<void> {
   await nextFrames()
   await ensureFonts()
+  if (host) await ensureImages(host)
   await nextFrames()
 }
 
@@ -244,7 +264,7 @@ async function renderDocumentImages<A extends DocAnalysis>(
   try {
     // ---- 1. Measuring pass ----
     root.render(createElement(kit.Measure, { analysis, blocks }))
-    await settle()
+    await settle(host)
 
     const px = (sel: string): number => {
       const el = host.querySelector(sel) as HTMLElement | null
@@ -261,7 +281,7 @@ async function renderDocumentImages<A extends DocAnalysis>(
     const singleH = fullHeaderH + 4 + contentH + 28 // SingleDocTree top/bottom padding
     if (!opts.forcePages && singleH <= MAX_SINGLE_H) {
       root.render(createElement(kit.Single, { analysis, blocks }))
-      await settle()
+      await settle(host)
       const node = host.firstElementChild as HTMLElement | null
       if (!node) throw new Error('export node failed to render')
       const captureOpts = {
@@ -282,7 +302,7 @@ async function renderDocumentImages<A extends DocAnalysis>(
     const pages = paginateBalanced(blocks, heights, gap, firstBudget, restBudget)
 
     root.render(createElement(kit.Pages, { analysis, pages }))
-    await settle()
+    await settle(host)
 
     const pageNodes = Array.from(host.querySelectorAll('[data-page]')) as HTMLElement[]
     if (pageNodes.length === 0) throw new Error('export pages failed to render')

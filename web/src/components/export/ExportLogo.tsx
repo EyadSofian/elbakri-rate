@@ -1,21 +1,32 @@
 const LOGO_RATIO = 1304 / 344
 
-export function ExportLogo({ height = 54 }: { height?: number }) {
-  const width = Math.round(height * LOGO_RATIO)
+export function ExportLogo({
+  height,
+  h,
+  variant = 'blue',
+}: {
+  height?: number
+  h?: number
+  variant?: 'blue' | 'white'
+}) {
+  const finalHeight = height ?? h ?? 54
+  const width = Math.round(finalHeight * LOGO_RATIO)
 
   return (
     <img
-      src="/elbakri-logo-blue.png"
+      src={variant === 'white' ? '/elbakri-logo-white.png' : '/elbakri-logo-blue.png'}
       alt="ELBAKRI OVERSEAS"
+      width={width}
+      height={finalHeight}
       draggable={false}
       style={{
         display: 'block',
         width,
-        height,
+        height: finalHeight,
         minWidth: width,
         maxWidth: width,
-        minHeight: height,
-        maxHeight: height,
+        minHeight: finalHeight,
+        maxHeight: finalHeight,
         objectFit: 'contain',
         flex: '0 0 auto',
       }}
