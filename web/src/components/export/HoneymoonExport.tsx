@@ -69,6 +69,10 @@ function roomRank(room: string): number {
   return i === -1 ? ROOM_ORDER.length + 1 : i
 }
 
+function priceTypeLabel(room: string, lang: Lang): string {
+  return ROOM_ORDER.includes(room) ? roomLabel(room, lang) : room
+}
+
 function isPerRoom(basis: Rate['pricing_basis']): boolean {
   return basis === 'per_room_per_night' || basis === 'per_room_package'
 }
@@ -388,7 +392,7 @@ function PriceBlock({
                 <div className="nums" style={{ ...cell(bg, bt), fontSize: D.cellFs, fontWeight: 700, color: SUB, whiteSpace: 'nowrap' }}>{r.period}</div>
                 {showType && (
                   <div style={{ ...cell(bg, bt), fontSize: D.cellFs, fontWeight: 700, color: INK }}>
-                    {roomLabel(r.room, lang)}{distinctMeals > 1 ? ` · ${mealLabel(r.meal, lang)}` : ''}
+                    {priceTypeLabel(r.room, lang)}{distinctMeals > 1 ? ` · ${mealLabel(r.meal, lang)}` : ''}
                   </div>
                 )}
                 <div className="nums" style={{ ...cell(bg, bt), justifyContent: 'center', gap: 4 }}>
