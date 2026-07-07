@@ -3,9 +3,9 @@ import { Check, Heart, Phone, Sparkles, Utensils } from 'lucide-react'
 import { priceNumber, formatDate } from '@/lib/utils'
 import { translate, type Lang } from '@/lib/i18n'
 import { mealLabel, roomLabel } from '@/lib/labels'
-import { Logo } from '@/components/layout/Logo'
 import { describeOffer, type HotelGroup } from '@/lib/grouping'
 import { PAGE_W, PAGE_H, type FlowBlock, type OfferExportData } from './ClientOfferExport'
+import { ExportLogo } from './ExportLogo'
 import type { Rate } from '@/types'
 
 /**
@@ -458,7 +458,7 @@ export function HoneymoonHeaderFull({ analysis }: { analysis: HoneymoonAnalysis 
     <div style={{ padding: `20px ${PAD_X}px 10px` }}>
       {/* Direction-locked LTR so the logo sits physically LEFT for Arabic too. */}
       <div style={{ direction: 'ltr', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20 }}>
-        <Logo className="h-[54px] max-w-[300px]" />
+        <ExportLogo height={54} />
         <div style={{ direction: dir, textAlign: 'end' }}>
           <span style={{ display: 'inline-block', border: `1.5px solid ${GOLD}`, color: NAVY, background: '#fff', fontSize: 12, fontWeight: 800, letterSpacing: dir === 'rtl' ? 0 : 1, padding: '4px 14px', borderRadius: 999, textTransform: dir === 'rtl' ? 'none' : 'uppercase', whiteSpace: 'nowrap' }}>
             {t('honeymoon.badge')}
@@ -501,7 +501,7 @@ export function HoneymoonRunningHeader({ analysis }: { analysis: HoneymoonAnalys
   return (
     <div style={{ padding: `14px ${PAD_X}px 8px` }}>
       <div style={{ direction: 'ltr', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18 }}>
-        <Logo className="h-[34px] max-w-[200px]" />
+        <ExportLogo height={34} />
         <div style={{ direction: dir, maxWidth: 620, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: 13, fontWeight: 700, color: SUB }}>
           {t('honeymoon.badge')} · {resolvedTitle}
         </div>
