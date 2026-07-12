@@ -59,6 +59,10 @@ function route_public_catalog(string $method, array $seg, array $body): void
         $params[] = $region;
     }
     $whereSql = 'WHERE ' . implode(' AND ', $where);
+    $hasStructuredChildPolicies = child_policy_schema_ready();
+    $childCols = $hasStructuredChildPolicies
+        ? ', r.id AS rate_id, r.hotel_id, r.child_policy_id, h.default_child_policy_id'
+        : ', r.id AS rate_id, r.hotel_id, NULL AS child_policy_id, NULL AS default_child_policy_id';
 
     // Denormalized snapshots on hotel_rates are the source of truth for
     // public display; hotels join only adds star_rating + active filter.
@@ -70,6 +74,7 @@ function route_public_catalog(string $method, array $seg, array $body): void
             r.adult_price, r.child_price, r.child_age_from, r.child_age_to,
             r.nights, r.days,
             h.star_rating
+            $childCols
          FROM hotel_rates r
          LEFT JOIN hotels h ON h.id = r.hotel_id
          $whereSql
@@ -126,12 +131,27 @@ function route_public_catalog(string $method, array $seg, array $body): void
                 'child_price'    => $num($row['child_price']),
                 'child_age_from' => $num($row['child_age_from']),
                 'child_age_to'   => $num($row['child_age_to']),
+                'child_policy'   => null,
+                'child_policy_by_room' => null,
             ];
             $periods[$mapKey] = &$hotels[$hotelKey]['periods'][$idx];
         }
 
         $price = $num($row['adult_price']);
         $slot  = strtolower((string) $row['room_type']); // single|double|triple|custom
+        $publicChildPolicy = child_policy_public_for_rate($row);
+        if ($publicChildPolicy !== null) {
+            $currentPolicy = $periods[$mapKey]['child_policy'];
+            if (in_array($slot, ['single', 'double', 'triple'], true)) {
+                if ($periods[$mapKey]['child_policy_by_room'] === null) $periods[$mapKey]['child_policy_by_room'] = [];
+                $periods[$mapKey]['child_policy_by_room'][$slot] = $publicChildPolicy;
+            }
+            if ($currentPolicy === null) {
+                $periods[$mapKey]['child_policy'] = $publicChildPolicy;
+            } elseif (json_encode($currentPolicy) !== json_encode($publicChildPolicy) && in_array($slot, ['single', 'double', 'triple'], true)) {
+                $periods[$mapKey]['child_policy_by_room'][$slot] = $publicChildPolicy;
+            }
+        }
         if (in_array($slot, ['single', 'double', 'triple'], true) && $price !== null) {
             $periods[$mapKey][$slot] = $price;
         }

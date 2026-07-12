@@ -10,6 +10,7 @@ import { Badge, Stars } from '@/components/ui/badge'
 import { Modal, ConfirmDialog } from '@/components/ui/modal'
 import { HotelForm } from '@/components/HotelForm'
 import { RateForm } from '@/components/RateForm'
+import { ChildPolicyPanel } from '@/components/ChildPolicyPanel'
 import { ExportActions } from '@/components/export/ExportActions'
 import { PeriodsEditor, newPeriod, periodsToApi, countRecords, type Period } from '@/components/PeriodsEditor'
 import { useLists } from '@/lib/hooks'
@@ -160,6 +161,8 @@ export default function HotelDetailPage() {
       </div>
       )}
 
+      <ChildPolicyPanel hotel={hotel} canEdit={canEdit} />
+
       <Tabs
         active={tab}
         onChange={setTab}
@@ -258,7 +261,7 @@ export default function HotelDetailPage() {
         }
       >
         <SectionTitle>{t('hotel.periodsSection')}</SectionTitle>
-        <PeriodsEditor value={periods} onChange={setPeriods} lists={lists} />
+        <PeriodsEditor value={periods} onChange={setPeriods} lists={lists} childPolicies={hotel.child_policies ?? []} />
       </Modal>}
 
       <ConfirmDialog

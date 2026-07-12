@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/inputs'
 import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
-import { useHotels, useLists } from '@/lib/hooks'
+import { useChildPolicies, useHotels, useLists } from '@/lib/hooks'
 import { mealLabel, pricingText, roomLabel } from '@/lib/labels'
 import { api, ApiError } from '@/lib/api'
 import type { Rate, MealPlan, PricingBasis, Currency, RateStatus } from '@/types'
@@ -42,10 +42,12 @@ export function RateForm({
     date_to: rate?.date_to ?? '',
     adult_price: rate?.adult_price != null ? String(rate.adult_price) : '',
     child_price: rate?.child_price != null ? String(rate.child_price) : '',
+    child_policy_id: rate?.child_policy_id != null ? String(rate.child_policy_id) : '',
     season_name: rate?.season_name ?? '',
     booking_notes: rate?.booking_notes ?? '',
     status: (rate?.status ?? 'Draft') as RateStatus,
   })
+  const { data: childPolicies } = useChildPolicies(f.hotel_id)
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }))
 
   const save = useMutation({
@@ -62,6 +64,7 @@ export function RateForm({
         package_id: null,
         adult_price: f.adult_price === '' ? null : Number(f.adult_price),
         child_price: f.child_price === '' ? null : Number(f.child_price),
+        child_policy_id: f.child_policy_id === '' ? null : Number(f.child_policy_id),
         date_from: f.date_from || null,
         date_to: f.date_to || null,
       }
@@ -128,11 +131,30 @@ export function RateForm({
 
         <div className="grid grid-cols-2 gap-3">
         <Field label={t('rateForm.hotel')} required className="col-span-2">
-          <Select value={f.hotel_id} onChange={(e) => set('hotel_id', e.target.value)} disabled={!!fixedHotelId}>
+          <Select
+            value={f.hotel_id}
+            onChange={(e) => setF((p) => ({ ...p, hotel_id: e.target.value, child_policy_id: '' }))}
+            disabled={!!fixedHotelId}
+          >
             <option value="">{t('rateForm.selectHotel')}</option>
             {hotels?.map((h) => <option key={h.id} value={h.id}>{h.hotel_name}</option>)}
           </Select>
         </Field>
+        {childPolicies && childPolicies.length > 0 && (
+          <Field label={t('rateForm.structuredChildPolicy')} className="col-span-2">
+            <Select value={f.child_policy_id} onChange={(e) => set('child_policy_id', e.target.value)}>
+              <option value="">{t('rateForm.noStructuredPolicy')}</option>
+              {childPolicies.filter((p) => p.status === 'Active').map((p) => (
+                <option key={p.id} value={p.id}>{p.policy_name} ({p.policy_code})</option>
+              ))}
+            </Select>
+            {f.child_policy_id && (
+              <p className="mt-1 text-xs text-ink-muted">
+                {childPolicies.find((p) => String(p.id) === f.child_policy_id)?.summary}
+              </p>
+            )}
+          </Field>
+        )}
         </div>
 
         {!editing && mode === 'periods' ? (
@@ -146,7 +168,7 @@ export function RateForm({
                 {t('rateForm.willCreate', { n: countRecords(periods) })}
               </span>
             </div>
-            <PeriodsEditor value={periods} onChange={setPeriods} lists={lists} />
+            <PeriodsEditor value={periods} onChange={setPeriods} lists={lists} childPolicies={childPolicies ?? []} />
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">

@@ -5,6 +5,8 @@ export type QuoteStatus = 'draft' | 'ready' | 'sent' | 'archived'
 export type TransferOpt = 'Included' | 'Optional' | 'Not Included'
 export type Currency = 'EGP' | 'USD' | 'EUR' | 'SAR'
 export type MealPlan = 'RO' | 'BB' | 'HB' | 'FB' | 'AI' | 'SAI' | 'UAI'
+export type ChildPolicyPricingType = 'free' | 'fixed' | 'percent_adult' | 'adult_rate' | 'manual'
+export type ChildPolicyBedType = 'sharing' | 'extra_bed' | 'any'
 export type PricingBasis =
   | 'per_person_per_night'
   | 'per_room_per_night'
@@ -54,6 +56,7 @@ export interface Hotel {
   description: string | null
   facilities: string | null
   child_policy_default: string | null
+  default_child_policy_id?: number | null
   transfer_notes_default: string | null
   status: ActiveStatus
   rates_count?: number
@@ -62,6 +65,34 @@ export interface Hotel {
   independent_rates?: Rate[]
   package_rates?: Rate[]
   packages?: { id: number; package_name: string; package_type: string | null }[]
+  child_policies?: ChildPolicy[]
+}
+
+export interface ChildPolicyRule {
+  id?: number
+  child_policy_id?: number
+  child_number_from: number
+  child_number_to: number
+  age_from: string | number
+  age_to: string | number
+  pricing_type: ChildPolicyPricingType
+  value: string | number | null
+  bed_type: ChildPolicyBedType
+  notes: string | null
+  sort_order: number
+}
+
+export interface ChildPolicy {
+  id: number
+  hotel_id: number
+  policy_code: string
+  policy_name: string
+  description: string | null
+  min_adults: number
+  max_children: number
+  status: ActiveStatus
+  summary?: string | null
+  rules: ChildPolicyRule[]
 }
 
 export interface Package {
@@ -138,6 +169,10 @@ export interface Rate {
   child_price: string | number | null
   child_age_from: string | number | null
   child_age_to: string | number | null
+  child_policy_id?: number | null
+  child_policy_code?: string | null
+  child_policy_name?: string | null
+  child_policy_status?: ActiveStatus | null
   nights: number | null
   days: number | null
   transfer_included: TransferOpt
@@ -186,6 +221,8 @@ export interface Lists {
   categories: string[]
   quote_statuses: QuoteStatus[]
   roles: Role[]
+  child_policy_pricing_types?: ChildPolicyPricingType[]
+  child_policy_bed_types?: ChildPolicyBedType[]
 }
 
 export interface SystemCheckItem {

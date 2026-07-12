@@ -15,12 +15,14 @@ function route_export(string $method, array $seg, array $body): void
     }
     $whereSql = 'WHERE ' . implode(' AND ', $where);
 
-    $rows = fetch_all("SELECT * FROM hotel_rates r $whereSql ORDER BY r.hotel_name, r.date_from", $params);
+    [$policyCols, $policyJoin] = rate_child_policy_sql();
+    $rows = fetch_all("SELECT r.* $policyCols FROM hotel_rates r $policyJoin $whereSql ORDER BY r.hotel_name, r.date_from", $params);
 
     $cols = ['id', 'hotel_name', 'hotel_group', 'package_name', 'region', 'sub_region', 'category',
         'offer_name', 'season_name', 'date_from', 'date_to', 'room_type', 'meal_plan', 'pricing_basis',
         'currency', 'adult_price', 'child_price', 'child_age_from', 'child_age_to', 'nights', 'days',
-        'transfer_included', 'transfer_details', 'child_policy', 'cancellation_policy', 'booking_notes', 'status'];
+        'child_policy_code', 'child_policy_name', 'transfer_included', 'transfer_details', 'child_policy',
+        'cancellation_policy', 'booking_notes', 'status'];
 
     log_audit('export', 'rate', null, null, ['count' => count($rows)]);
 

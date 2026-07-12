@@ -82,11 +82,13 @@ function route_packages(string $method, array $seg, array $body): void
                 array_merge([$id], $visParams)
             );
         }
+        [$policyCols, $policyJoin] = rate_child_policy_sql();
         $pkg['rates'] = fetch_all(
-            "SELECT DISTINCT r.*, " . rate_hotel_info_select('h') . "
+            "SELECT DISTINCT r.*, " . rate_hotel_info_select('h') . $policyCols . "
              FROM package_hotels ph
              JOIN hotel_rates r ON r.hotel_id = ph.hotel_id
              LEFT JOIN hotels h ON h.id = r.hotel_id
+             $policyJoin
              WHERE ph.package_id = ? AND $visSql
              ORDER BY r.hotel_name, r.date_from, r.room_type",
             array_merge([$id], $visParams)

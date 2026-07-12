@@ -13,6 +13,7 @@ require __DIR__ . '/lib/auth.php';
 require __DIR__ . '/lib/permissions.php';
 require __DIR__ . '/lib/validate.php';
 require __DIR__ . '/lib/audit.php';
+require __DIR__ . '/lib/child_policies.php';
 
 foreach (glob(__DIR__ . '/routes/*.php') as $routeFile) {
     require $routeFile;
@@ -58,6 +59,7 @@ $routes = [
     'users'          => 'route_users',
     'hotel-groups'   => 'route_hotel_groups',
     'hotels'         => 'route_hotels',
+    'child-policies' => 'route_child_policies',
     'packages'       => 'route_packages',
     'package-hotels' => 'route_package_hotels',
     'honeymoon'      => 'route_honeymoon',
@@ -117,5 +119,7 @@ function route_lists(string $method, array $seg, array $body): void
         'categories'      => CATEGORIES,
         'quote_statuses'  => QUOTE_STATUSES,
         'roles'           => USER_ROLES,
+        'child_policy_pricing_types' => CHILD_POLICY_PRICING_TYPES,
+        'child_policy_bed_types'     => CHILD_POLICY_BED_TYPES,
     ]);
 }

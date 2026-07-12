@@ -44,16 +44,19 @@ function route_hotels(string $method, array $seg, array $body): void
         if (!$hotel) fail('الفندق غير موجود.', 404, 'not_found');
 
         [$visSql, $visParams] = rates_visibility($user, 'r');
+        [$policyCols, $policyJoin] = rate_child_policy_sql();
 
         $hotel['independent_rates'] = fetch_all(
-            "SELECT r.* FROM hotel_rates r
+            "SELECT r.* $policyCols FROM hotel_rates r
+             $policyJoin
              WHERE r.hotel_id = ? AND r.package_id IS NULL AND $visSql
              ORDER BY r.date_from, r.room_type",
             array_merge([$id], $visParams)
         );
         $hotel['package_rates'] = fetch_all(
-            "SELECT r.*, p.package_name AS pkg_name FROM hotel_rates r
+            "SELECT r.*, p.package_name AS pkg_name $policyCols FROM hotel_rates r
              LEFT JOIN packages p ON p.id = r.package_id
+             $policyJoin
              WHERE r.hotel_id = ? AND r.package_id IS NOT NULL AND $visSql
              ORDER BY r.package_id, r.date_from, r.room_type",
             array_merge([$id], $visParams)
@@ -77,6 +80,11 @@ function route_hotels(string $method, array $seg, array $body): void
                  ORDER BY p.package_name",
                 array_merge([$id], $visParams)
             );
+        }
+        if (child_policy_schema_ready()) {
+            $hotel['child_policies'] = child_policy_list($id, true);
+        } else {
+            $hotel['child_policies'] = [];
         }
         ok($hotel);
     }

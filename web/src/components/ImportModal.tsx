@@ -89,6 +89,7 @@ export function ImportModal({ open, onClose }: { open: boolean; onClose: () => v
         currency: obj.currency ?? 'EGP',
         adult_price: priceRaw,
         child_price: obj.child_price ?? null,
+        child_policy_code: obj.child_policy_code ?? null,
         nights: obj.nights ?? null,
         days: obj.days ?? null,
       })

@@ -43,6 +43,12 @@ function route_import(string $method, array $seg, array $body): void
 
     $total = count($rows);
     $success = 0; $failed = 0; $errors = [];
+    foreach ($rows as $row) {
+        if (is_array($row) && (array_key_exists('child_policy_id', $row) || array_key_exists('child_policy_code', $row))) {
+            ensure_child_policy_schema();
+            break;
+        }
+    }
 
     $importType = v_enum($body['type'] ?? 'csv', ['csv', 'xlsx'], 'csv');
     q('INSERT INTO import_jobs (type, status, rows_total, created_by) VALUES (?,?,?,?)',

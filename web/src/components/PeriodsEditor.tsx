@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/inputs'
 import { mealLabel, pricingText, pricingBasisLabel } from '@/lib/labels'
 import { useI18n } from '@/lib/i18n'
-import type { Lists, MealPlan, PricingBasis, Currency, RateStatus } from '@/types'
+import type { ChildPolicy, Lists, MealPlan, PricingBasis, Currency, RateStatus } from '@/types'
 
 export interface Period {
   id: string
@@ -14,6 +14,7 @@ export interface Period {
   currency: Currency
   status: RateStatus
   season_name: string
+  child_policy_id: string
   booking_notes: string
   double: string
   triple: string
@@ -34,6 +35,7 @@ export function newPeriod(defaults?: Partial<Period>): Period {
     currency: 'EGP',
     status: 'Draft',
     season_name: '',
+    child_policy_id: '',
     booking_notes: '',
     double: '',
     triple: '',
@@ -60,6 +62,7 @@ export function periodsToApi(periods: Period[]) {
       currency: p.currency,
       status: p.status,
       season_name: p.season_name || null,
+      child_policy_id: p.child_policy_id === '' ? null : Number(p.child_policy_id),
       booking_notes: p.booking_notes || null,
       prices,
     }
@@ -77,7 +80,17 @@ export function countRecords(periods: Period[]): number {
   }, 0)
 }
 
-export function PeriodsEditor({ value, onChange, lists }: { value: Period[]; onChange: (p: Period[]) => void; lists?: Lists }) {
+export function PeriodsEditor({
+  value,
+  onChange,
+  lists,
+  childPolicies = [],
+}: {
+  value: Period[]
+  onChange: (p: Period[]) => void
+  lists?: Lists
+  childPolicies?: ChildPolicy[]
+}) {
   const { t, lang } = useI18n()
   const update = (id: string, patch: Partial<Period>) => onChange(value.map((p) => (p.id === id ? { ...p, ...patch } : p)))
   const remove = (id: string) => onChange(value.filter((p) => p.id !== id))
@@ -141,8 +154,18 @@ export function PeriodsEditor({ value, onChange, lists }: { value: Period[]; onC
             </Field>
           </div>
 
-          <div className="mt-2 grid grid-cols-1 gap-2">
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Field label={t('period.season')}><Input placeholder={t('period.seasonPlaceholder')} value={p.season_name} onChange={(e) => update(p.id, { season_name: e.target.value })} /></Field>
+            {childPolicies.length > 0 && (
+              <Field label={t('rateForm.structuredChildPolicy')}>
+                <Select value={p.child_policy_id} onChange={(e) => update(p.id, { child_policy_id: e.target.value })}>
+                  <option value="">{t('rateForm.noStructuredPolicy')}</option>
+                  {childPolicies.filter((policy) => policy.status === 'Active').map((policy) => (
+                    <option key={policy.id} value={policy.id}>{policy.policy_name} ({policy.policy_code})</option>
+                  ))}
+                </Select>
+              </Field>
+            )}
           </div>
 
           <div className="mt-2 grid grid-cols-1 gap-2">

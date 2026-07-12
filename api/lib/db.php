@@ -89,6 +89,28 @@ function db_column_exists(string $table, string $column): bool
     return (int)($row['c'] ?? 0) > 0;
 }
 
+function db_table_exists(string $table): bool
+{
+    $row = fetch_one(
+        'SELECT COUNT(*) c
+           FROM INFORMATION_SCHEMA.TABLES
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
+        [$table]
+    );
+    return (int)($row['c'] ?? 0) > 0;
+}
+
+function db_index_exists(string $table, string $index): bool
+{
+    $row = fetch_one(
+        'SELECT COUNT(*) c
+           FROM INFORMATION_SCHEMA.STATISTICS
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?',
+        [$table, $index]
+    );
+    return (int)($row['c'] ?? 0) > 0;
+}
+
 function ensure_user_nav_tabs_column(): void
 {
     static $done = false;

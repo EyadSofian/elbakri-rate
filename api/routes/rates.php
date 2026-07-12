@@ -36,48 +36,66 @@ function insert_rate(array $in, array $user): int
     $roomType = v_str($in['room_type'] ?? 'Double', 60) ?? 'Double';
     $status   = v_enum($in['status'] ?? 'Draft', RATE_STATUSES, 'Draft');
 
-    q('INSERT INTO hotel_rates
-        (hotel_id, hotel_group_id, package_id, package_name, hotel_name, hotel_group,
-         region, sub_region, category, offer_name, season_name, date_from, date_to,
-         room_type, meal_plan, pricing_basis, currency, adult_price, child_price,
-         child_age_from, child_age_to, nights, days, transfer_included, transfer_details,
-         child_policy, cancellation_policy, booking_notes, status, source_type, created_by, updated_by)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-        [
-            $hotelId,
-            $groupId,
-            $pid,
-            $pkg['package_name'] ?? null,
-            $h['hotel_name'],
-            $h['group_name'] ?? null,
-            v_str($in['region'] ?? $h['region'], 120),
-            v_str($in['sub_region'] ?? $h['sub_region'], 120),
-            v_enum($in['category'] ?? ($pid ? 'Package' : 'Hotel'), CATEGORIES, $pid ? 'Package' : 'Hotel'),
-            v_str($in['offer_name'] ?? null, 190),
-            v_str($in['season_name'] ?? null, 190),
-            v_date($in['date_from'] ?? null),
-            v_date($in['date_to'] ?? null),
-            $roomType,
-            v_enum($in['meal_plan'] ?? 'BB', MEAL_PLANS, 'BB'),
-            v_enum($in['pricing_basis'] ?? 'per_person_per_night', PRICING_BASES, 'per_person_per_night'),
-            v_enum($in['currency'] ?? 'EGP', CURRENCIES, 'EGP'),
-            v_num($in['adult_price'] ?? null),
-            v_num($in['child_price'] ?? null),
-            v_num($in['child_age_from'] ?? null),
-            v_num($in['child_age_to'] ?? null),
-            v_int($in['nights'] ?? null),
-            v_int($in['days'] ?? null),
-            v_enum($in['transfer_included'] ?? 'Optional', TRANSFER_OPTS, 'Optional'),
-            v_str($in['transfer_details'] ?? null),
-            v_str($in['child_policy'] ?? null),
-            v_str($in['cancellation_policy'] ?? null),
-            v_str($in['booking_notes'] ?? null),
-            $status,
-            v_enum($in['source_type'] ?? 'manual', ['manual', 'csv', 'xlsx'], 'manual'),
-            $user['id'],
-            $user['id'],
-        ]
-    );
+    $childPolicyId = null;
+    $hasChildPolicyColumn = false;
+    if (array_key_exists('child_policy_id', $in) || array_key_exists('child_policy_code', $in)) {
+        $childPolicyId = child_policy_resolve_for_hotel($hotelId, $in['child_policy_id'] ?? null, v_str($in['child_policy_code'] ?? null));
+        $hasChildPolicyColumn = true;
+    } elseif (child_policy_schema_ready()) {
+        $hasChildPolicyColumn = true;
+    }
+
+    $cols = [
+        'hotel_id', 'hotel_group_id', 'package_id', 'package_name', 'hotel_name', 'hotel_group',
+        'region', 'sub_region', 'category', 'offer_name', 'season_name', 'date_from', 'date_to',
+        'room_type', 'meal_plan', 'pricing_basis', 'currency', 'adult_price', 'child_price',
+        'child_age_from', 'child_age_to',
+    ];
+    $vals = [
+        $hotelId,
+        $groupId,
+        $pid,
+        $pkg['package_name'] ?? null,
+        $h['hotel_name'],
+        $h['group_name'] ?? null,
+        v_str($in['region'] ?? $h['region'], 120),
+        v_str($in['sub_region'] ?? $h['sub_region'], 120),
+        v_enum($in['category'] ?? ($pid ? 'Package' : 'Hotel'), CATEGORIES, $pid ? 'Package' : 'Hotel'),
+        v_str($in['offer_name'] ?? null, 190),
+        v_str($in['season_name'] ?? null, 190),
+        v_date($in['date_from'] ?? null),
+        v_date($in['date_to'] ?? null),
+        $roomType,
+        v_enum($in['meal_plan'] ?? 'BB', MEAL_PLANS, 'BB'),
+        v_enum($in['pricing_basis'] ?? 'per_person_per_night', PRICING_BASES, 'per_person_per_night'),
+        v_enum($in['currency'] ?? 'EGP', CURRENCIES, 'EGP'),
+        v_num($in['adult_price'] ?? null),
+        v_num($in['child_price'] ?? null),
+        v_num($in['child_age_from'] ?? null),
+        v_num($in['child_age_to'] ?? null),
+    ];
+    if ($hasChildPolicyColumn) {
+        $cols[] = 'child_policy_id';
+        $vals[] = $childPolicyId;
+    }
+    foreach ([
+        'nights' => v_int($in['nights'] ?? null),
+        'days' => v_int($in['days'] ?? null),
+        'transfer_included' => v_enum($in['transfer_included'] ?? 'Optional', TRANSFER_OPTS, 'Optional'),
+        'transfer_details' => v_str($in['transfer_details'] ?? null),
+        'child_policy' => v_str($in['child_policy'] ?? null),
+        'cancellation_policy' => v_str($in['cancellation_policy'] ?? null),
+        'booking_notes' => v_str($in['booking_notes'] ?? null),
+        'status' => $status,
+        'source_type' => v_enum($in['source_type'] ?? 'manual', ['manual', 'csv', 'xlsx'], 'manual'),
+        'created_by' => $user['id'],
+        'updated_by' => $user['id'],
+    ] as $col => $val) {
+        $cols[] = $col;
+        $vals[] = $val;
+    }
+    $placeholders = implode(',', array_fill(0, count($cols), '?'));
+    q('INSERT INTO hotel_rates (' . implode(',', $cols) . ") VALUES ($placeholders)", $vals);
     return insert_id();
 }
 
@@ -96,10 +114,25 @@ function delete_duplicate_rate(int $hotelId, ?int $pid, ?string $from, ?string $
 
 function rate_hotel_info_select(string $hotelAlias = 'h'): string
 {
+    $defaultPolicy = db_column_exists('hotels', 'default_child_policy_id')
+        ? "$hotelAlias.default_child_policy_id AS hotel_default_child_policy_id,"
+        : "NULL AS hotel_default_child_policy_id,";
     return "$hotelAlias.description AS hotel_description,
             $hotelAlias.facilities AS hotel_facilities,
             $hotelAlias.child_policy_default AS hotel_child_policy_default,
+            $defaultPolicy
             $hotelAlias.transfer_notes_default AS hotel_transfer_notes_default";
+}
+
+function rate_child_policy_sql(): array
+{
+    if (!child_policy_schema_ready()) return ['', ''];
+    return [
+        ", cp.policy_code AS child_policy_code,
+           cp.policy_name AS child_policy_name,
+           cp.status AS child_policy_status",
+        ' LEFT JOIN child_policies cp ON cp.id = r.child_policy_id ',
+    ];
 }
 
 /**
@@ -131,6 +164,8 @@ function expand_periods_to_rates(int $hotelId, ?int $packageId, array $periods, 
             'child_price'       => $p['child_price'] ?? null,
             'child_age_from'    => $p['child_age_from'] ?? null,
             'child_age_to'      => $p['child_age_to'] ?? null,
+            'child_policy_id'   => $p['child_policy_id'] ?? null,
+            'child_policy_code' => $p['child_policy_code'] ?? null,
             'nights'            => $p['nights'] ?? null,
             'days'              => $p['days'] ?? null,
             'transfer_included' => $p['transfer_included'] ?? 'Optional',
@@ -149,13 +184,19 @@ function expand_periods_to_rates(int $hotelId, ?int $packageId, array $periods, 
                 $rt = v_str($r['room_type'] ?? null, 60);
                 $price = v_num($r['adult_price'] ?? ($r['price'] ?? null));
                 if ($rt === null || $price === null) continue;
-                $rooms[] = ['room_type' => $rt, 'adult_price' => $price, 'child_price' => $r['child_price'] ?? null];
+                $rooms[] = [
+                    'room_type' => $rt,
+                    'adult_price' => $price,
+                    'child_price' => $r['child_price'] ?? null,
+                    'child_policy_id' => $r['child_policy_id'] ?? null,
+                    'child_policy_code' => $r['child_policy_code'] ?? null,
+                ];
             }
         } elseif (!empty($p['prices']) && is_array($p['prices'])) {
             foreach ($p['prices'] as $rt => $price) {
                 $price = v_num($price);
                 if ($price === null) continue;
-                $rooms[] = ['room_type' => (string)$rt, 'adult_price' => $price, 'child_price' => null];
+                $rooms[] = ['room_type' => (string)$rt, 'adult_price' => $price, 'child_price' => null, 'child_policy_id' => null, 'child_policy_code' => null];
             }
         }
 
@@ -164,6 +205,8 @@ function expand_periods_to_rates(int $hotelId, ?int $packageId, array $periods, 
             $row['room_type']   = $room['room_type'];
             $row['adult_price'] = $room['adult_price'];
             if ($room['child_price'] !== null) $row['child_price'] = $room['child_price'];
+            if ($room['child_policy_id'] !== null) $row['child_policy_id'] = $room['child_policy_id'];
+            if ($room['child_policy_code'] !== null) $row['child_policy_code'] = $room['child_policy_code'];
 
             if ($overwrite) {
                 delete_duplicate_rate(
@@ -177,6 +220,20 @@ function expand_periods_to_rates(int $hotelId, ?int $packageId, array $periods, 
         }
     }
     return $count;
+}
+
+function periods_need_child_policy_schema(array $periods): bool
+{
+    foreach ($periods as $p) {
+        if (!is_array($p)) continue;
+        if (array_key_exists('child_policy_id', $p) || array_key_exists('child_policy_code', $p)) return true;
+        if (!empty($p['rooms']) && is_array($p['rooms'])) {
+            foreach ($p['rooms'] as $r) {
+                if (is_array($r) && (array_key_exists('child_policy_id', $r) || array_key_exists('child_policy_code', $r))) return true;
+            }
+        }
+    }
+    return false;
 }
 
 // ---- Route ---------------------------------------------------------
@@ -196,6 +253,8 @@ function route_rates(string $method, array $seg, array $body): void
 
         if (empty($hotelIds)) fail('اختر فندقًا واحدًا على الأقل.', 422, 'validation');
         if (empty($periods))  fail('أضف فترة واحدة على الأقل.', 422, 'validation');
+
+        if (periods_need_child_policy_schema($periods)) ensure_child_policy_schema();
 
         // Count room prices present across periods.
         $roomsPerPeriod = 0;
@@ -242,6 +301,32 @@ function route_rates(string $method, array $seg, array $body): void
         ok(['updated' => count($ids), 'status' => $status]);
     }
 
+    // POST /rates/bulk-child-policy
+    if ($method === 'POST' && $sub === 'bulk-child-policy') {
+        require_edit($user);
+        ensure_child_policy_schema();
+        $ids = array_values(array_filter(array_map('intval', (array)($body['ids'] ?? []))));
+        if (empty($ids)) fail('Select rates first.', 422, 'validation');
+        $policyIdRaw = $body['child_policy_id'] ?? null;
+        $policyId = $policyIdRaw === null || $policyIdRaw === '' ? null : v_int($policyIdRaw);
+        $place = implode(',', array_fill(0, count($ids), '?'));
+        $rates = fetch_all("SELECT id, hotel_id, child_policy_id FROM hotel_rates WHERE id IN ($place)", $ids);
+        if (count($rates) !== count($ids)) fail('Some selected rates were not found.', 404, 'not_found');
+        if ($policyId !== null) {
+            $policy = child_policy_fetch($policyId, false);
+            if (!$policy) fail('Child policy not found or inactive.', 422, 'validation');
+            foreach ($rates as $r) {
+                if ((int)$r['hotel_id'] !== (int)$policy['hotel_id']) {
+                    fail('Selected child policy belongs to another hotel.', 422, 'validation', ['rate_id' => (int)$r['id']]);
+                }
+            }
+        }
+        q("UPDATE hotel_rates SET child_policy_id = ?, updated_by = ? WHERE id IN ($place)",
+            array_merge([$policyId, $user['id']], $ids));
+        log_audit($policyId === null ? 'unassign' : 'assign', 'rate_child_policy', null, null, ['ids' => $ids, 'child_policy_id' => $policyId]);
+        ok(['updated' => count($ids), 'child_policy_id' => $policyId]);
+    }
+
     // POST /rates/copy  (copy rates to other hotels)
     if ($method === 'POST' && $sub === 'copy') {
         require_edit($user);
@@ -260,6 +345,7 @@ function route_rates(string $method, array $seg, array $body): void
                     $in = $r;
                     unset($in['id'], $in['created_at'], $in['updated_at']);
                     $in['hotel_id'] = $hid;
+                    unset($in['child_policy_id'], $in['child_policy_code']);
                     if ($overwrite) {
                         delete_duplicate_rate($hid, v_int($r['package_id']), $r['date_from'], $r['date_to'], $r['room_type'], $r['meal_plan']);
                     }
@@ -314,10 +400,12 @@ function route_rates(string $method, array $seg, array $body): void
         $per  = min(200, max(1, (int)(query_param('per_page') ?: 50)));
         $off  = ($page - 1) * $per;
 
+        [$policyCols, $policyJoin] = rate_child_policy_sql();
         $items = fetch_all(
-            "SELECT r.*, " . rate_hotel_info_select('h') . "
+            "SELECT r.*, " . rate_hotel_info_select('h') . $policyCols . "
              FROM hotel_rates r
              LEFT JOIN hotels h ON h.id = r.hotel_id
+             $policyJoin
              $whereSql ORDER BY r.updated_at DESC LIMIT $per OFFSET $off",
             $params
         );
@@ -327,10 +415,12 @@ function route_rates(string $method, array $seg, array $body): void
     // GET /rates/:id
     if ($method === 'GET' && $id !== null) {
         [$visSql, $visParams] = rates_visibility($user, 'r');
+        [$policyCols, $policyJoin] = rate_child_policy_sql();
         $row = fetch_one(
-            "SELECT r.*, " . rate_hotel_info_select('h') . "
+            "SELECT r.*, " . rate_hotel_info_select('h') . $policyCols . "
              FROM hotel_rates r
              LEFT JOIN hotels h ON h.id = r.hotel_id
+             $policyJoin
              WHERE r.id = ? AND $visSql",
             array_merge([$id], $visParams)
         );
@@ -356,6 +446,10 @@ function route_rates(string $method, array $seg, array $body): void
             fail('الأسعار المؤرشفة لا يمكن تعديلها إلا بواسطة المدير.', 403, 'forbidden');
         }
 
+        if (array_key_exists('child_policy_id', $body) || array_key_exists('child_policy_code', $body)) {
+            $body['child_policy_id'] = child_policy_resolve_for_hotel((int)$old['hotel_id'], $body['child_policy_id'] ?? null, v_str($body['child_policy_code'] ?? null));
+        }
+
         $fields = [
             'package_id' => fn($v) => v_int($v),
             'offer_name' => fn($v) => v_str($v, 190),
@@ -373,6 +467,7 @@ function route_rates(string $method, array $seg, array $body): void
             'child_price'=> fn($v) => v_num($v),
             'child_age_from' => fn($v) => v_num($v),
             'child_age_to'   => fn($v) => v_num($v),
+            'child_policy_id' => fn($v) => v_int($v),
             'nights'     => fn($v) => v_int($v),
             'days'       => fn($v) => v_int($v),
             'transfer_included' => fn($v) => v_enum($v, TRANSFER_OPTS, $old['transfer_included']),

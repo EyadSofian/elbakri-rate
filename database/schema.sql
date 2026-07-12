@@ -55,16 +55,66 @@ CREATE TABLE IF NOT EXISTS `hotels` (
   `description`            TEXT NULL,
   `facilities`             TEXT NULL,
   `child_policy_default`   TEXT NULL,
+  `default_child_policy_id` BIGINT UNSIGNED NULL,
   `transfer_notes_default` TEXT NULL,
   `status`                 ENUM('Active','Inactive') NOT NULL DEFAULT 'Active',
   `created_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_hotels_group` (`hotel_group_id`),
+  KEY `idx_hotels_default_child_policy` (`default_child_policy_id`),
   KEY `idx_hotels_region` (`region`),
   KEY `idx_hotels_status` (`status`),
   CONSTRAINT `fk_hotels_group` FOREIGN KEY (`hotel_group_id`)
     REFERENCES `hotel_groups` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- child_policies
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `child_policies` (
+  `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `hotel_id`      BIGINT UNSIGNED NOT NULL,
+  `policy_code`   VARCHAR(80) NOT NULL,
+  `policy_name`   VARCHAR(190) NOT NULL,
+  `description`   TEXT NULL,
+  `min_adults`    TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  `max_children`  TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `status`        ENUM('Active','Inactive') NOT NULL DEFAULT 'Active',
+  `created_by`    BIGINT UNSIGNED NULL,
+  `updated_by`    BIGINT UNSIGNED NULL,
+  `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_child_policy_hotel_code` (`hotel_id`,`policy_code`),
+  KEY `idx_child_policy_hotel` (`hotel_id`),
+  KEY `idx_child_policy_status` (`status`),
+  CONSTRAINT `fk_child_policy_hotel` FOREIGN KEY (`hotel_id`)
+    REFERENCES `hotels` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- child_policy_rules
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `child_policy_rules` (
+  `id`                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `child_policy_id`   BIGINT UNSIGNED NOT NULL,
+  `child_number_from` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  `child_number_to`   TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  `age_from`          DECIMAL(4,2) NOT NULL DEFAULT 0,
+  `age_to`            DECIMAL(4,2) NOT NULL DEFAULT 11.99,
+  `pricing_type`      ENUM('free','fixed','percent_adult','adult_rate','manual') NOT NULL DEFAULT 'manual',
+  `value`             DECIMAL(12,2) NULL,
+  `bed_type`          ENUM('sharing','extra_bed','any') NOT NULL DEFAULT 'any',
+  `notes`             TEXT NULL,
+  `sort_order`        INT NOT NULL DEFAULT 0,
+  `created_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_child_rule_policy` (`child_policy_id`),
+  KEY `idx_child_rule_sort` (`child_policy_id`,`sort_order`),
+  CONSTRAINT `fk_child_rule_policy` FOREIGN KEY (`child_policy_id`)
+    REFERENCES `child_policies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -134,6 +184,7 @@ CREATE TABLE IF NOT EXISTS `hotel_rates` (
   `child_price`       DECIMAL(12,2) NULL,
   `child_age_from`    DECIMAL(4,1) NULL,
   `child_age_to`      DECIMAL(4,1) NULL,
+  `child_policy_id`   BIGINT UNSIGNED NULL,
   `nights`            SMALLINT UNSIGNED NULL,
   `days`              SMALLINT UNSIGNED NULL,
   `transfer_included` ENUM('Included','Optional','Not Included') NOT NULL DEFAULT 'Optional',
@@ -151,6 +202,7 @@ CREATE TABLE IF NOT EXISTS `hotel_rates` (
   KEY `idx_rates_hotel` (`hotel_id`),
   KEY `idx_rates_package` (`package_id`),
   KEY `idx_rates_group` (`hotel_group_id`),
+  KEY `idx_rates_child_policy` (`child_policy_id`),
   KEY `idx_rates_status` (`status`),
   KEY `idx_rates_region` (`region`),
   KEY `idx_rates_dates` (`date_from`,`date_to`),
@@ -160,7 +212,9 @@ CREATE TABLE IF NOT EXISTS `hotel_rates` (
   CONSTRAINT `fk_rates_group` FOREIGN KEY (`hotel_group_id`)
     REFERENCES `hotel_groups` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_rates_package` FOREIGN KEY (`package_id`)
-    REFERENCES `packages` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+    REFERENCES `packages` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_rates_child_policy` FOREIGN KEY (`child_policy_id`)
+    REFERENCES `child_policies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
