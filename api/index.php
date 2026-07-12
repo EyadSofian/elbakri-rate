@@ -69,6 +69,7 @@ $routes = [
     'whatsapp'       => 'route_whatsapp',
     'lists'          => 'route_lists',
     'system-check'   => 'route_system_check',
+    'public-catalog' => 'route_public_catalog',
 ];
 
 try {
