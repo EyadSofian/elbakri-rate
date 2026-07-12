@@ -36,6 +36,10 @@ return [
     'APP_ENV' => 'production',  // 'development' enables verbose errors
     'APP_NAME' => 'ELBAKRI Hotel Rate Hub',
 
+    // Shared server-to-server token for GET /api/public-catalog.
+    // Empty disables the public catalog endpoint.
+    'PUBLIC_CATALOG_TOKEN' => '',
+
     // ---- WhatsApp Cloud API (optional) ----
     'WHATSAPP_ENABLED' => false,
     'WHATSAPP_TOKEN' => '',

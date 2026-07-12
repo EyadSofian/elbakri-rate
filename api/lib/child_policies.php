@@ -244,16 +244,25 @@ function child_policy_public_object(?array $policy): ?array
             'pricing_type'      => $r['pricing_type'],
             'value'             => $r['value'] !== null ? (float)$r['value'] : null,
             'bed_type'          => $r['bed_type'],
+            'notes'             => $r['notes'] ?? null,
         ];
+    }
+    $requiresManual = empty($rules);
+    foreach ($rules as $rule) {
+        if ($rule['pricing_type'] === 'manual') {
+            $requiresManual = true;
+            break;
+        }
     }
     return [
         'id'           => (int)$policy['id'],
         'code'         => $policy['policy_code'],
         'name'         => $policy['policy_name'],
+        'description'  => $policy['description'] ?? null,
         'min_adults'   => (int)$policy['min_adults'],
         'max_children' => (int)$policy['max_children'],
         'rules'        => $rules,
-        'requires_manual_confirmation' => empty($rules),
+        'requires_manual_confirmation' => $requiresManual,
     ];
 }
 

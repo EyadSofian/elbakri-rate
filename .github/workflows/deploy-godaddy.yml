@@ -21,6 +21,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          coverage: none
+
+      - name: Lint PHP API
+        shell: bash
+        run: find api -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
