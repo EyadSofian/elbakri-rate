@@ -16,7 +16,7 @@ const PRICING_MAP: Record<string, string> = {
   'package per person': 'per_person_package',
   'package per room': 'per_room_package',
 }
-const KNOWN_KEYS = ['hotel_name', 'record_id', 'room_type', 'adult_price', 'package_name']
+const KNOWN_KEYS = ['hotel_name', 'record_id', 'room_type', 'adult_price']
 
 function normalizeKey(k: string) {
   return String(k).trim().toLowerCase().replace(/\s+/g, '_')
@@ -34,7 +34,7 @@ function excelDate(v: unknown): string | null {
 
 interface Row { [k: string]: unknown }
 
-export function ImportModal({ open, onClose, packageId }: { open: boolean; onClose: () => void; packageId?: number }) {
+export function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const toast = useToast()
   const { t } = useI18n()
   const qc = useQueryClient()
@@ -76,7 +76,6 @@ export function ImportModal({ open, onClose, packageId }: { open: boolean; onClo
       parsed.push({
         hotel_name: String(hotel).trim(),
         hotel_group: obj.hotel_group ?? null,
-        package_name: packageId ? undefined : obj.package_name ?? null,
         region: obj.region ?? null,
         sub_region: obj.sub_region ?? null,
         category: obj.category ?? null,
@@ -103,7 +102,6 @@ export function ImportModal({ open, onClose, packageId }: { open: boolean; onClo
     setBusy(true)
     try {
       const payload: Record<string, unknown> = { rows, default_status: status, overwrite, type: 'xlsx' }
-      if (packageId) payload.rows = rows.map((r) => ({ ...r, package_id: packageId }))
       const res = await api.post<{ rows_success: number; rows_failed: number }>('/import', payload)
       setResult(res)
       qc.invalidateQueries()

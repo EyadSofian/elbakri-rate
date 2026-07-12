@@ -20,12 +20,13 @@ function route_hotels(string $method, array $seg, array $body): void
         $rows = fetch_all(
             "SELECT h.*, g.name AS group_name,
                 (SELECT COUNT(*) FROM hotel_rates r WHERE r.hotel_id = h.id AND $visSql) AS rates_count,
-                (SELECT COUNT(*) FROM hotel_rates r WHERE r.hotel_id = h.id AND r.status='Ready' AND $visSql) AS ready_count
+                (SELECT COUNT(*) FROM hotel_rates r WHERE r.hotel_id = h.id AND r.status='Ready' AND $visSql) AS ready_count,
+                (SELECT COUNT(*) FROM hotel_rates r WHERE r.hotel_id = h.id AND r.status='Draft' AND $visSql) AS draft_count
              FROM hotels h
              LEFT JOIN hotel_groups g ON g.id = h.hotel_group_id
              $whereSql
              ORDER BY h.hotel_name",
-            array_merge($visParams, $visParams, $params)
+            array_merge($visParams, $visParams, $visParams, $params)
         );
         // Non-privileged users only see hotels that have visible rates.
         if (!is_privileged($user)) {
@@ -57,11 +58,26 @@ function route_hotels(string $method, array $seg, array $body): void
              ORDER BY r.package_id, r.date_from, r.room_type",
             array_merge([$id], $visParams)
         );
-        $hotel['packages'] = fetch_all(
-            'SELECT p.id, p.package_name, p.package_type FROM package_hotels ph
-             JOIN packages p ON p.id = ph.package_id WHERE ph.hotel_id = ? ORDER BY p.package_name',
-            [$id]
-        );
+        if (!is_privileged($user) && empty($hotel['independent_rates']) && empty($hotel['package_rates'])) {
+            fail('الفندق غير متاح ضمن نطاق صلاحياتك.', 404, 'not_found');
+        }
+        if (is_privileged($user)) {
+            $hotel['packages'] = fetch_all(
+                'SELECT p.id, p.package_name, p.package_type FROM package_hotels ph
+                 JOIN packages p ON p.id = ph.package_id WHERE ph.hotel_id = ? ORDER BY p.package_name',
+                [$id]
+            );
+        } else {
+            $hotel['packages'] = fetch_all(
+                "SELECT DISTINCT p.id, p.package_name, p.package_type
+                 FROM package_hotels ph
+                 JOIN packages p ON p.id = ph.package_id
+                 JOIN hotel_rates r ON r.hotel_id = ph.hotel_id
+                 WHERE ph.hotel_id = ? AND $visSql
+                 ORDER BY p.package_name",
+                array_merge([$id], $visParams)
+            );
+        }
         ok($hotel);
     }
 

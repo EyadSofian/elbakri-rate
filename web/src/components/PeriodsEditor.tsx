@@ -1,9 +1,9 @@
 import { Plus, Trash2, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/inputs'
-import { mealLabel, pricingText, transferText, pricingBasisLabel } from '@/lib/labels'
+import { mealLabel, pricingText, pricingBasisLabel } from '@/lib/labels'
 import { useI18n } from '@/lib/i18n'
-import type { Lists, MealPlan, PricingBasis, Currency, RateStatus, TransferOpt } from '@/types'
+import type { Lists, MealPlan, PricingBasis, Currency, RateStatus } from '@/types'
 
 export interface Period {
   id: string
@@ -14,9 +14,6 @@ export interface Period {
   currency: Currency
   status: RateStatus
   season_name: string
-  transfer_included: TransferOpt
-  child_policy: string
-  transfer_details: string
   booking_notes: string
   double: string
   triple: string
@@ -37,9 +34,6 @@ export function newPeriod(defaults?: Partial<Period>): Period {
     currency: 'EGP',
     status: 'Draft',
     season_name: '',
-    transfer_included: 'Optional',
-    child_policy: '',
-    transfer_details: '',
     booking_notes: '',
     double: '',
     triple: '',
@@ -66,9 +60,6 @@ export function periodsToApi(periods: Period[]) {
       currency: p.currency,
       status: p.status,
       season_name: p.season_name || null,
-      transfer_included: p.transfer_included,
-      child_policy: p.child_policy || null,
-      transfer_details: p.transfer_details || null,
       booking_notes: p.booking_notes || null,
       prices,
     }
@@ -92,10 +83,9 @@ export function PeriodsEditor({ value, onChange, lists }: { value: Period[]; onC
   const remove = (id: string) => onChange(value.filter((p) => p.id !== id))
   const duplicate = (p: Period) => onChange([...value, newPeriod({ ...p, id: undefined })])
 
-  const meals = lists?.meal_plans ?? (['RO', 'BB', 'HB', 'FB', 'AI', 'UAI'] as MealPlan[])
+  const meals = lists?.meal_plans ?? (['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI'] as MealPlan[])
   const bases = lists?.pricing_basis ?? (Object.keys(pricingBasisLabel) as PricingBasis[])
   const currencies = lists?.currencies ?? (['EGP', 'USD', 'EUR', 'SAR'] as Currency[])
-  const transfers = lists?.transfer_opts ?? (['Included', 'Optional', 'Not Included'] as TransferOpt[])
 
   return (
     <div className="space-y-3">
@@ -151,34 +141,11 @@ export function PeriodsEditor({ value, onChange, lists }: { value: Period[]; onC
             </Field>
           </div>
 
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <Field label={t('rateForm.transfer')}>
-              <Select value={p.transfer_included} onChange={(e) => update(p.id, { transfer_included: e.target.value as TransferOpt })}>
-                {transfers.map((to) => <option key={to} value={to}>{transferText(to as TransferOpt, lang)}</option>)}
-              </Select>
-            </Field>
+          <div className="mt-2 grid grid-cols-1 gap-2">
             <Field label={t('period.season')}><Input placeholder={t('period.seasonPlaceholder')} value={p.season_name} onChange={(e) => update(p.id, { season_name: e.target.value })} /></Field>
           </div>
 
-          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Field label={t('period.childPolicy')}>
-              <Textarea
-                rows={2}
-                value={p.child_policy}
-                onChange={(e) => update(p.id, { child_policy: e.target.value })}
-                placeholder={t('period.childPolicyPlaceholder')}
-                className="min-h-[70px]"
-              />
-            </Field>
-            <Field label={t('period.transferDetails')}>
-              <Textarea
-                rows={2}
-                value={p.transfer_details}
-                onChange={(e) => update(p.id, { transfer_details: e.target.value })}
-                placeholder={t('period.transferDetailsPlaceholder')}
-                className="min-h-[70px]"
-              />
-            </Field>
+          <div className="mt-2 grid grid-cols-1 gap-2">
             <Field label={t('period.bookingNotes')}>
               <Textarea
                 rows={2}

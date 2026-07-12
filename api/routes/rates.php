@@ -94,6 +94,14 @@ function delete_duplicate_rate(int $hotelId, ?int $pid, ?string $from, ?string $
     return q($sql, $params)->rowCount();
 }
 
+function rate_hotel_info_select(string $hotelAlias = 'h'): string
+{
+    return "$hotelAlias.description AS hotel_description,
+            $hotelAlias.facilities AS hotel_facilities,
+            $hotelAlias.child_policy_default AS hotel_child_policy_default,
+            $hotelAlias.transfer_notes_default AS hotel_transfer_notes_default";
+}
+
 /**
  * Expand "periods" (each holding several room prices) into rate rows.
  * Period shape:
@@ -307,7 +315,10 @@ function route_rates(string $method, array $seg, array $body): void
         $off  = ($page - 1) * $per;
 
         $items = fetch_all(
-            "SELECT r.* FROM hotel_rates r $whereSql ORDER BY r.updated_at DESC LIMIT $per OFFSET $off",
+            "SELECT r.*, " . rate_hotel_info_select('h') . "
+             FROM hotel_rates r
+             LEFT JOIN hotels h ON h.id = r.hotel_id
+             $whereSql ORDER BY r.updated_at DESC LIMIT $per OFFSET $off",
             $params
         );
         ok(['items' => $items, 'total' => $total, 'page' => $page, 'per_page' => $per]);
@@ -316,7 +327,13 @@ function route_rates(string $method, array $seg, array $body): void
     // GET /rates/:id
     if ($method === 'GET' && $id !== null) {
         [$visSql, $visParams] = rates_visibility($user, 'r');
-        $row = fetch_one("SELECT r.* FROM hotel_rates r WHERE r.id = ? AND $visSql", array_merge([$id], $visParams));
+        $row = fetch_one(
+            "SELECT r.*, " . rate_hotel_info_select('h') . "
+             FROM hotel_rates r
+             LEFT JOIN hotels h ON h.id = r.hotel_id
+             WHERE r.id = ? AND $visSql",
+            array_merge([$id], $visParams)
+        );
         if (!$row) fail('السعر غير موجود أو خارج نطاقك.', 404, 'not_found');
         ok($row);
     }

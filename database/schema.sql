@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `password_hash` VARCHAR(255) NOT NULL,
   `role`          ENUM('admin','operations','sales','viewer') NOT NULL DEFAULT 'viewer',
   `is_active`     TINYINT(1) NOT NULL DEFAULT 1,
+  `nav_tabs`      TEXT NULL, -- JSON array of allowed sidebar tab keys; NULL = default by role
   `created_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`    TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -160,6 +161,52 @@ CREATE TABLE IF NOT EXISTS `hotel_rates` (
     REFERENCES `hotel_groups` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `fk_rates_package` FOREIGN KEY (`package_id`)
     REFERENCES `packages` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- honeymoon_offers
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `honeymoon_offers` (
+  `id`             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `hotel_name`     VARCHAR(190) NOT NULL,
+  `offer_name`     VARCHAR(190) NOT NULL,
+  `region`         VARCHAR(120) NULL,
+  `features`       TEXT NULL,
+  `internal_notes` TEXT NULL,
+  `status`         ENUM('Draft','Ready','Archived') NOT NULL DEFAULT 'Draft',
+  `created_by`     BIGINT UNSIGNED NULL,
+  `updated_by`     BIGINT UNSIGNED NULL,
+  `created_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_hm_status` (`status`),
+  KEY `idx_hm_hotel` (`hotel_name`),
+  KEY `idx_hm_region` (`region`),
+  CONSTRAINT `fk_hm_created_by` FOREIGN KEY (`created_by`)
+    REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_hm_updated_by` FOREIGN KEY (`updated_by`)
+    REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- honeymoon_offer_periods
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `honeymoon_offer_periods` (
+  `id`                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `honeymoon_offer_id` BIGINT UNSIGNED NOT NULL,
+  `date_from`          DATE NULL,
+  `date_to`            DATE NULL,
+  `price_label`        VARCHAR(120) NULL,
+  `price`              DECIMAL(12,2) NULL,
+  `currency`           VARCHAR(3) NOT NULL DEFAULT 'EGP',
+  `notes`              TEXT NULL,
+  `sort_order`         INT NOT NULL DEFAULT 0,
+  `created_at`         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_hmp_offer` (`honeymoon_offer_id`),
+  KEY `idx_hmp_dates` (`date_from`,`date_to`),
+  CONSTRAINT `fk_hmp_offer` FOREIGN KEY (`honeymoon_offer_id`)
+    REFERENCES `honeymoon_offers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------

@@ -2,7 +2,7 @@ import { translate, type Lang } from '@/lib/i18n'
 import type { MealPlan, PricingBasis, RateStatus, QuoteStatus, Role, TransferOpt } from '@/types'
 
 /* Enum key sets */
-const MEAL_KEYS: MealPlan[] = ['RO', 'BB', 'HB', 'FB', 'AI', 'UAI']
+const MEAL_KEYS: MealPlan[] = ['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI']
 const ROOM_KEYS = ['Single', 'Double', 'Triple', 'Quad', 'Family', 'Custom']
 const PRICING_KEYS: PricingBasis[] = ['per_person_per_night', 'per_room_per_night', 'per_person_package', 'per_room_package']
 const RATE_STATUS_KEYS: RateStatus[] = ['Draft', 'Ready', 'Archived']

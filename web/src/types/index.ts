@@ -4,7 +4,7 @@ export type ActiveStatus = 'Active' | 'Inactive'
 export type QuoteStatus = 'draft' | 'ready' | 'sent' | 'archived'
 export type TransferOpt = 'Included' | 'Optional' | 'Not Included'
 export type Currency = 'EGP' | 'USD' | 'EUR' | 'SAR'
-export type MealPlan = 'RO' | 'BB' | 'HB' | 'FB' | 'AI' | 'UAI'
+export type MealPlan = 'RO' | 'BB' | 'HB' | 'FB' | 'AI' | 'SAI' | 'UAI'
 export type PricingBasis =
   | 'per_person_per_night'
   | 'per_room_per_night'
@@ -28,6 +28,7 @@ export interface CurrentUser {
   role: Role
   can_edit: boolean
   can_export: boolean
+  nav_tabs: string[] | null
   rules: AccessRule[]
 }
 
@@ -57,6 +58,7 @@ export interface Hotel {
   status: ActiveStatus
   rates_count?: number
   ready_count?: number
+  draft_count?: number
   independent_rates?: Rate[]
   package_rates?: Rate[]
   packages?: { id: number; package_name: string; package_type: string | null }[]
@@ -76,8 +78,41 @@ export interface Package {
   hotels_count?: number
   rates_count?: number
   ready_rates_count?: number
-  hotels?: Pick<Hotel, 'id' | 'hotel_name' | 'region' | 'star_rating' | 'status'>[]
+  draft_rates_count?: number
+  hotels?: Pick<Hotel, 'id' | 'hotel_name' | 'region' | 'sub_region' | 'star_rating' | 'status' | 'description' | 'facilities' | 'child_policy_default' | 'transfer_notes_default'>[]
   rates?: Rate[]
+}
+
+export interface HoneymoonPeriod {
+  id?: number
+  honeymoon_offer_id?: number
+  date_from: string | null
+  date_to: string | null
+  price_label: string | null
+  price: string | number | null
+  currency: Currency
+  notes: string | null
+  sort_order?: number
+}
+
+export interface HoneymoonOffer {
+  id: number
+  hotel_name: string
+  offer_name: string
+  region: string | null
+  features: string | null
+  internal_notes: string | null
+  status: RateStatus
+  created_by?: number | null
+  updated_by?: number | null
+  created_by_name?: string | null
+  updated_by_name?: string | null
+  periods_count?: number
+  first_date?: string | null
+  last_date?: string | null
+  periods?: HoneymoonPeriod[]
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Rate {
@@ -113,6 +148,10 @@ export interface Rate {
   status: RateStatus
   source_type: string
   updated_at?: string
+  hotel_description?: string | null
+  hotel_facilities?: string | null
+  hotel_child_policy_default?: string | null
+  hotel_transfer_notes_default?: string | null
 }
 
 export interface QuoteItem extends Rate {

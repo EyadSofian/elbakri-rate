@@ -9,6 +9,7 @@ function user_public(array $u): array
         'full_name' => $u['full_name'],
         'role'      => $u['role'],
         'is_active' => (int)$u['is_active'],
+        'nav_tabs'  => normalize_nav_tabs($u['nav_tabs'] ?? null),
         'created_at'=> $u['created_at'] ?? null,
     ];
 }
@@ -16,11 +17,12 @@ function user_public(array $u): array
 function route_users(string $method, array $seg, array $body): void
 {
     $admin = require_role(['admin']);
+    ensure_user_nav_tabs_column();
     $id = isset($seg[0]) && is_numeric($seg[0]) ? (int)$seg[0] : null;
     $sub = $seg[1] ?? null;
 
     if ($method === 'GET' && $id === null) {
-        $rows = fetch_all('SELECT id,email,full_name,role,is_active,created_at FROM users ORDER BY created_at DESC');
+        $rows = fetch_all('SELECT id,email,full_name,role,is_active,nav_tabs,created_at FROM users ORDER BY created_at DESC');
         ok(array_map('user_public', $rows));
     }
 
@@ -39,12 +41,13 @@ function route_users(string $method, array $seg, array $body): void
         if (strlen($pass) < 6) fail('كلمة المرور 6 أحرف على الأقل.', 422, 'validation');
         if (fetch_one('SELECT id FROM users WHERE email = ?', [$email])) fail('البريد مستخدم بالفعل.', 422, 'validation');
 
-        q('INSERT INTO users (email, full_name, password_hash, role, is_active) VALUES (?,?,?,?,?)',
+        q('INSERT INTO users (email, full_name, password_hash, role, is_active, nav_tabs) VALUES (?,?,?,?,?,?)',
             [
                 $email, $name,
                 password_hash($pass, PASSWORD_BCRYPT),
                 v_enum($body['role'] ?? 'viewer', USER_ROLES, 'viewer'),
                 v_bool($body['is_active'] ?? true),
+                array_key_exists('nav_tabs', $body) ? encode_nav_tabs($body['nav_tabs']) : null,
             ]
         );
         $newId = insert_id();
@@ -61,6 +64,7 @@ function route_users(string $method, array $seg, array $body): void
         if (isset($body['full_name'])) { $set[] = 'full_name = ?'; $params[] = v_str($body['full_name'], 190); }
         if (isset($body['role']))      { $set[] = 'role = ?';      $params[] = v_enum($body['role'], USER_ROLES, $u['role']); }
         if (array_key_exists('is_active', $body)) { $set[] = 'is_active = ?'; $params[] = v_bool($body['is_active']); }
+        if (array_key_exists('nav_tabs', $body)) { $set[] = 'nav_tabs = ?'; $params[] = encode_nav_tabs($body['nav_tabs']); }
         if (!empty($body['password'])) {
             if (strlen($body['password']) < 6) fail('كلمة المرور 6 أحرف على الأقل.', 422, 'validation');
             $set[] = 'password_hash = ?'; $params[] = password_hash($body['password'], PASSWORD_BCRYPT);

@@ -7,19 +7,52 @@ function route_hotel_groups(string $method, array $seg, array $body): void
     $id = isset($seg[0]) ? (int)$seg[0] : null;
 
     if ($method === 'GET' && $id === null) {
+        [$visSql, $visParams] = rates_visibility($user, 'r');
         $rows = fetch_all(
-            'SELECT g.*,
+            "SELECT g.*,
                 (SELECT COUNT(*) FROM hotels h WHERE h.hotel_group_id = g.id) AS hotels_count,
-                (SELECT COUNT(*) FROM packages p WHERE p.hotel_group_id = g.id) AS packages_count
-             FROM hotel_groups g ORDER BY g.name'
+                (SELECT COUNT(*) FROM packages p WHERE p.hotel_group_id = g.id) AS packages_count,
+                (SELECT COUNT(DISTINCT h.id)
+                   FROM hotels h
+                   JOIN hotel_rates r ON r.hotel_id = h.id
+                  WHERE h.hotel_group_id = g.id AND $visSql) AS visible_hotels_count,
+                (SELECT COUNT(DISTINCT p.id)
+                   FROM packages p
+                   JOIN package_hotels ph ON ph.package_id = p.id
+                   JOIN hotel_rates r ON r.hotel_id = ph.hotel_id
+                  WHERE p.hotel_group_id = g.id AND $visSql) AS visible_packages_count
+             FROM hotel_groups g ORDER BY g.name",
+            array_merge($visParams, $visParams)
         );
+        if (!is_privileged($user)) {
+            $rows = array_values(array_filter($rows, fn($r) => ((int)$r['visible_hotels_count'] + (int)$r['visible_packages_count']) > 0));
+            foreach ($rows as &$row) {
+                $row['hotels_count'] = (int)$row['visible_hotels_count'];
+                $row['packages_count'] = (int)$row['visible_packages_count'];
+                unset($row['visible_hotels_count'], $row['visible_packages_count']);
+            }
+            unset($row);
+        }
         ok($rows);
     }
 
     if ($method === 'GET' && $id !== null) {
         $row = fetch_one('SELECT * FROM hotel_groups WHERE id = ?', [$id]);
         if (!$row) fail('المجموعة غير موجودة.', 404, 'not_found');
-        $row['hotels'] = fetch_all('SELECT id,hotel_name,region,status FROM hotels WHERE hotel_group_id = ? ORDER BY hotel_name', [$id]);
+        if (is_privileged($user)) {
+            $row['hotels'] = fetch_all('SELECT id,hotel_name,region,status FROM hotels WHERE hotel_group_id = ? ORDER BY hotel_name', [$id]);
+        } else {
+            [$visSql, $visParams] = rates_visibility($user, 'r');
+            $row['hotels'] = fetch_all(
+                "SELECT DISTINCT h.id,h.hotel_name,h.region,h.status
+                 FROM hotels h
+                 JOIN hotel_rates r ON r.hotel_id = h.id
+                 WHERE h.hotel_group_id = ? AND $visSql
+                 ORDER BY h.hotel_name",
+                array_merge([$id], $visParams)
+            );
+            if (empty($row['hotels'])) fail('المجموعة غير متاحة.', 404, 'not_found');
+        }
         ok($row);
     }
 

@@ -4,7 +4,7 @@ import { Menu, X, LogOut, ShoppingCart, MoreHorizontal, ChevronLeft, ChevronRigh
 import { useAuth } from '@/context/AuthContext'
 import { useQuoteCart } from '@/context/QuoteCartContext'
 import { useI18n } from '@/lib/i18n'
-import { navForRole, type NavItem } from '@/lib/nav'
+import { navForUser, type NavItem } from '@/lib/nav'
 import { cn } from '@/lib/utils'
 import { Logo } from './Logo'
 import { LanguageToggle } from './LanguageToggle'
@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   if (!user) return <>{children}</>
 
-  const items = navForRole(user.role)
+  const items = navForUser(user)
   const mobileItems = items.filter((i) => i.mobile).slice(0, 4)
   const showCart = ['admin', 'operations', 'sales'].includes(user.role)
 

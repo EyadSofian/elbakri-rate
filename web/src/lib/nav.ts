@@ -3,7 +3,7 @@ import {
   Building2,
   Boxes,
   Package,
-  Grid3x3,
+  HeartHandshake,
   Tags,
   FileText,
   Users,
@@ -11,7 +11,7 @@ import {
   Settings,
   type LucideIcon,
 } from 'lucide-react'
-import type { Role } from '@/types'
+import type { CurrentUser, Role } from '@/types'
 
 export interface NavItem {
   key: string
@@ -23,11 +23,11 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { key: 'dashboard', labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'operations'], mobile: true },
-  { key: 'hotels', labelKey: 'nav.hotels', path: '/hotels', icon: Building2, roles: ['admin', 'operations'], mobile: true },
-  { key: 'groups', labelKey: 'nav.groups', path: '/hotel-groups', icon: Boxes, roles: ['admin', 'operations'], mobile: false },
-  { key: 'packages', labelKey: 'nav.packages', path: '/packages', icon: Package, roles: ['admin', 'operations'], mobile: true },
-  { key: 'matrix', labelKey: 'nav.matrix', path: '/rates/matrix/new', icon: Grid3x3, roles: ['admin', 'operations'], mobile: false },
+  { key: 'dashboard', labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'operations', 'sales'], mobile: true },
+  { key: 'hotels', labelKey: 'nav.hotels', path: '/hotels', icon: Building2, roles: ['admin', 'operations', 'sales'], mobile: true },
+  { key: 'groups', labelKey: 'nav.groups', path: '/hotel-groups', icon: Boxes, roles: ['admin', 'operations', 'sales'], mobile: false },
+  { key: 'packages', labelKey: 'nav.packages', path: '/packages', icon: Package, roles: ['admin', 'operations', 'sales'], mobile: true },
+  { key: 'honeymoon', labelKey: 'nav.honeymoon', path: '/honeymoon', icon: HeartHandshake, roles: ['admin', 'operations', 'sales', 'viewer'], mobile: true },
   { key: 'sales', labelKey: 'nav.sales', path: '/sales', icon: Tags, roles: ['admin', 'operations', 'sales', 'viewer'], mobile: true },
   { key: 'quotes', labelKey: 'nav.quotes', path: '/quotes', icon: FileText, roles: ['admin', 'operations', 'sales'], mobile: true },
   { key: 'users', labelKey: 'nav.users', path: '/users', icon: Users, roles: ['admin'], mobile: false },
@@ -39,7 +39,22 @@ export function navForRole(role: Role): NavItem[] {
   return NAV_ITEMS.filter((i) => i.roles.includes(role))
 }
 
+export function navForUser(user: CurrentUser): NavItem[] {
+  const roleItems = navForRole(user.role)
+  if (!user.nav_tabs || user.nav_tabs.length === 0) return roleItems
+  const allowed = new Set(user.nav_tabs)
+  return roleItems.filter((i) => allowed.has(i.key))
+}
+
+export function canAccessNavKey(user: CurrentUser, key: string): boolean {
+  return navForUser(user).some((i) => i.key === key)
+}
+
 export function homeForRole(role: Role): string {
   if (role === 'sales' || role === 'viewer') return '/sales'
   return '/dashboard'
+}
+
+export function homeForUser(user: CurrentUser): string {
+  return navForUser(user)[0]?.path ?? homeForRole(user.role)
 }

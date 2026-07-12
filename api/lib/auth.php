@@ -65,7 +65,8 @@ function current_user(): ?array
     $payload = jwt_decode($token);
     if (!$payload || empty($payload['sub'])) return $user = null;
 
-    $row = fetch_one('SELECT id,email,full_name,role,is_active FROM users WHERE id = ?', [$payload['sub']]);
+    ensure_user_nav_tabs_column();
+    $row = fetch_one('SELECT id,email,full_name,role,is_active,nav_tabs FROM users WHERE id = ?', [$payload['sub']]);
     if (!$row || (int)$row['is_active'] !== 1) return $user = null;
 
     $row['id'] = (int)$row['id'];

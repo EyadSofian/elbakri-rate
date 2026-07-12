@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, Building2, Eye, EyeOff, CheckSquare } from 'lucide-react'
+import { ArrowRight, Building2, CalendarDays, Eye, EyeOff, CheckSquare, Utensils } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageLoader, ErrorState, EmptyState } from '@/components/ui/misc'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,8 @@ import { ExportActions } from '@/components/export/ExportActions'
 import { useI18n } from '@/lib/i18n'
 import { formatPrice, formatDateRange, cn } from '@/lib/utils'
 import { mealLabel, roomLabel, categoryText } from '@/lib/labels'
-import type { Package, Rate } from '@/types'
+import { groupRates } from '@/lib/grouping'
+import type { Package } from '@/types'
 
 export default function SalesPackagePage() {
   const { id } = useParams()
@@ -22,16 +23,22 @@ export default function SalesPackagePage() {
   const [client, setClient] = useState('')
 
   const readyRates = useMemo(() => (pkg?.rates ?? []).filter((r) => r.status === 'Ready'), [pkg])
-  const groups = useMemo(() => {
-    // Key by hotel_id (the name is a denormalized snapshot) so a hotel groups once.
-    const map = new Map<number | string, { name: string; rates: Rate[] }>()
-    for (const r of readyRates) {
-      const k = r.hotel_id ?? `name:${r.hotel_name ?? ''}`
-      if (!map.has(k)) map.set(k, { name: r.hotel_name ?? '—', rates: [] })
-      map.get(k)!.rates.push(r)
-    }
-    return Array.from(map.values())
-  }, [readyRates])
+  const groups = useMemo(() => groupRates(readyRates), [readyRates])
+  const hotelInfo = useMemo(
+    () =>
+      Object.fromEntries(
+        (pkg?.hotels ?? []).map((h) => [
+          h.id,
+          {
+            description: h.description,
+            childPolicyDefault: h.child_policy_default,
+            transferNotesDefault: h.transfer_notes_default,
+            facilities: h.facilities,
+          },
+        ]),
+      ),
+    [pkg],
+  )
 
   if (isLoading) return <PageLoader />
   if (error || !pkg) return <ErrorState message={(error as Error)?.message ?? t('common.notFound')} />
@@ -81,6 +88,11 @@ export default function SalesPackagePage() {
           client={client || null}
           title={pkg.package_name}
           subtitle={pkg.region}
+          notes={pkg.description}
+          features={pkg.description}
+          hotelInfo={hotelInfo}
+          detailsMode="prices-only"
+          honeymoon={pkg.package_type === 'Honeymoon'}
           fileBase={`elbakri-${pkg.package_name}`}
         />
       </div>
@@ -92,29 +104,46 @@ export default function SalesPackagePage() {
           <p className="text-xs text-ink-muted">
             {selected.size === 0 ? t('sales.exportAllHint') : t('sales.selectedHint', { n: selected.size })}
           </p>
-          {groups.map((g) => (
-            <div key={g.name}>
-              <h3 className="mb-2 flex items-center gap-2 text-base font-bold text-navy-800">
-                <Building2 className="h-4 w-4 shrink-0 text-navy-500" />{g.name}
-              </h3>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {g.rates.map((r) => {
-                  const active = selected.has(r.id)
-                  return (
-                    <div key={r.id} className={cn('flex items-center justify-between gap-3 rounded-card border bg-white p-3', active ? 'border-gold ring-1 ring-gold/40' : 'border-navy-100')}>
-                      {!preview && (
-                        <Checkbox checked={active} onChange={() => toggle(r.id)} />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="font-semibold text-navy-900">{roomLabel(r.room_type, lang)} · {mealLabel(r.meal_plan, lang)}</div>
-                        <div className="nums text-xs text-ink-muted">{formatDateRange(r.date_from, r.date_to, t('export.allPeriods'))}</div>
-                      </div>
-                      <div className="nums text-lg font-extrabold text-navy-900">{formatPrice(r.adult_price, r.currency)}</div>
-                    </div>
-                  )
-                })}
+          {groups.map((hotel) => (
+            <section key={hotel.hotelId ?? hotel.name} className="overflow-hidden rounded-card border border-navy-100 bg-white">
+              <div className="flex flex-wrap items-center justify-between gap-2 bg-navy-900 px-4 py-3 text-white">
+                <h3 className="flex items-center gap-2 text-base font-bold">
+                  <Building2 className="h-4 w-4 shrink-0" />{hotel.name}
+                </h3>
+                {(hotel.region || hotel.subRegion) && (
+                  <span className="text-xs font-semibold text-white/70">{[hotel.region, hotel.subRegion].filter(Boolean).join(' · ')}</span>
+                )}
               </div>
-            </div>
+              <div className="space-y-3 p-3">
+                {hotel.periods.map((period) => (
+                  <div key={period.key} className="overflow-hidden rounded-card border border-navy-100">
+                    <div className="flex flex-wrap items-center justify-between gap-2 bg-navy-50 px-3 py-2">
+                      <span className="nums inline-flex items-center gap-1.5 text-sm font-bold text-navy-900">
+                        <CalendarDays className="h-4 w-4 text-navy-500" />{formatDateRange(period.from, period.to, t('export.allPeriods'))}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-700">
+                        <Utensils className="h-4 w-4 text-navy-500" />{mealLabel(period.meal, lang)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
+                      {period.rates.map((r) => {
+                        const active = selected.has(r.id)
+                        return (
+                          <div key={r.id} className={cn('flex items-center justify-between gap-3 rounded-card border bg-surface p-3', active ? 'border-gold ring-1 ring-gold/40' : 'border-navy-100')}>
+                            {!preview && <Checkbox checked={active} onChange={() => toggle(r.id)} />}
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-navy-900">{roomLabel(r.room_type, lang)}</div>
+                              <div className="mt-1 text-xs text-ink-muted">{mealLabel(r.meal_plan, lang)}</div>
+                            </div>
+                            <div className="nums text-lg font-extrabold text-navy-900">{formatPrice(r.adult_price, r.currency)}</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
           ))}
           {!preview && (
             <Button variant="subtle" size="sm" onClick={() => setSelected(new Set(readyRates.map((r) => r.id)))}>

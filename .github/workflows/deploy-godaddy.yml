@@ -60,6 +60,7 @@ jobs:
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASS: ${{ secrets.DB_PASS }}
           APP_SECRET: ${{ secrets.APP_SECRET }}
+          PUBLIC_CATALOG_TOKEN: ${{ secrets.PUBLIC_CATALOG_TOKEN }}
         run: |
           set -euo pipefail
           rm -rf deploy
@@ -104,6 +105,12 @@ jobs:
             "    'WHATSAPP_PHONE_NUMBER_ID' => '',",
             "    'WHATSAPP_VERIFY_TOKEN' => '',",
             "    'WHATSAPP_WHITELIST' => [],",
+            '',
+            // Shared-secret gate for the public read-only catalog endpoint
+            // (/api/public-catalog) consumed by the elbakri_sharm storefront.
+            // Optional: empty disables the endpoint (safe default) until the
+            // PUBLIC_CATALOG_TOKEN repo secret is set.
+            `    'PUBLIC_CATALOG_TOKEN' => ${phpString(process.env.PUBLIC_CATALOG_TOKEN || '')},`,
             '];',
             '',
           ]

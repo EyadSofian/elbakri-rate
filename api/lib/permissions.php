@@ -31,10 +31,35 @@ function is_privileged(array $user): bool
     return in_array($user['role'], ['admin', 'operations'], true);
 }
 
+function normalize_nav_tabs($raw): ?array
+{
+    if ($raw === null || $raw === '') return null;
+    $value = is_array($raw) ? $raw : json_decode((string)$raw, true);
+    if (!is_array($value)) return null;
+    $allowed = ['dashboard', 'hotels', 'groups', 'packages', 'honeymoon', 'sales', 'quotes', 'users', 'system', 'settings'];
+    $out = [];
+    foreach ($value as $key) {
+        $key = (string)$key;
+        if (in_array($key, $allowed, true) && !in_array($key, $out, true)) $out[] = $key;
+    }
+    return $out;
+}
+
+function encode_nav_tabs($value): ?string
+{
+    $tabs = normalize_nav_tabs($value);
+    if ($tabs === null) return null;
+    return json_encode($tabs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
 /** Can this user edit rates/hotels/packages at all? */
 function can_edit_data(array $user): bool
 {
-    return is_privileged($user);
+    if (is_privileged($user)) return true;
+    foreach (user_rules($user) as $r) {
+        if ((int)$r['can_edit'] === 1) return true;
+    }
+    return false;
 }
 
 /** Can this user export offers/quotes? */
@@ -93,7 +118,11 @@ function rates_visibility(array $user, string $alias = 'r'): array
                 $params[]  = $r['scope_id'];
                 break;
             case 'package':
-                $scopeOr[] = "$alias.package_id = ?";
+                $scopeOr[] = "($alias.package_id = ? OR EXISTS (
+                    SELECT 1 FROM package_hotels ph_scope
+                    WHERE ph_scope.package_id = ? AND ph_scope.hotel_id = $alias.hotel_id
+                ))";
+                $params[]  = $r['scope_id'];
                 $params[]  = $r['scope_id'];
                 break;
         }

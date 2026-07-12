@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/inputs'
 import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
-import { useHotels, usePackages, useLists } from '@/lib/hooks'
-import { mealLabel, pricingText, transferText, roomLabel } from '@/lib/labels'
+import { useHotels, useLists } from '@/lib/hooks'
+import { mealLabel, pricingText, roomLabel } from '@/lib/labels'
 import { api, ApiError } from '@/lib/api'
-import type { Rate, MealPlan, PricingBasis, Currency, RateStatus, TransferOpt } from '@/types'
+import type { Rate, MealPlan, PricingBasis, Currency, RateStatus } from '@/types'
 import { PeriodsEditor, countRecords, newPeriod, periodsToApi, type Period } from './PeriodsEditor'
 
 export function RateForm({
@@ -17,27 +17,23 @@ export function RateForm({
   onClose,
   rate,
   fixedHotelId,
-  fixedPackageId,
 }: {
   open: boolean
   onClose: () => void
   rate?: Rate
   fixedHotelId?: number
-  fixedPackageId?: number
 }) {
   const editing = !!rate
   const toast = useToast()
   const qc = useQueryClient()
   const { t, lang } = useI18n()
   const { data: hotels } = useHotels()
-  const { data: packages } = usePackages()
   const { data: lists } = useLists()
   const [mode, setMode] = useState<'single' | 'periods'>('single')
   const [periods, setPeriods] = useState<Period[]>([newPeriod()])
 
   const [f, setF] = useState({
     hotel_id: String(rate?.hotel_id ?? fixedHotelId ?? ''),
-    package_id: String(rate?.package_id ?? fixedPackageId ?? ''),
     room_type: rate?.room_type ?? 'Double',
     meal_plan: (rate?.meal_plan ?? 'BB') as MealPlan,
     pricing_basis: (rate?.pricing_basis ?? 'per_person_per_night') as PricingBasis,
@@ -46,9 +42,7 @@ export function RateForm({
     date_to: rate?.date_to ?? '',
     adult_price: rate?.adult_price != null ? String(rate.adult_price) : '',
     child_price: rate?.child_price != null ? String(rate.child_price) : '',
-    transfer_included: (rate?.transfer_included ?? 'Optional') as TransferOpt,
     season_name: rate?.season_name ?? '',
-    child_policy: rate?.child_policy ?? '',
     booking_notes: rate?.booking_notes ?? '',
     status: (rate?.status ?? 'Draft') as RateStatus,
   })
@@ -59,14 +53,13 @@ export function RateForm({
       if (!editing && mode === 'periods') {
         return api.post('/rates/matrix', {
           hotel_ids: [Number(f.hotel_id)],
-          package_id: f.package_id ? Number(f.package_id) : null,
           periods: periodsToApi(periods),
         })
       }
       const payload = {
         ...f,
         hotel_id: Number(f.hotel_id),
-        package_id: f.package_id ? Number(f.package_id) : null,
+        package_id: null,
         adult_price: f.adult_price === '' ? null : Number(f.adult_price),
         child_price: f.child_price === '' ? null : Number(f.child_price),
         date_from: f.date_from || null,
@@ -140,12 +133,6 @@ export function RateForm({
             {hotels?.map((h) => <option key={h.id} value={h.id}>{h.hotel_name}</option>)}
           </Select>
         </Field>
-        <Field label={t('rateForm.package')} className="col-span-2">
-          <Select value={f.package_id} onChange={(e) => set('package_id', e.target.value)} disabled={!!fixedPackageId}>
-            <option value="">{t('rateForm.independentOption')}</option>
-            {packages?.map((p) => <option key={p.id} value={p.id}>{p.package_name}</option>)}
-          </Select>
-        </Field>
         </div>
 
         {!editing && mode === 'periods' ? (
@@ -170,7 +157,7 @@ export function RateForm({
         </Field>
         <Field label={t('rateForm.meal')}>
           <Select value={f.meal_plan} onChange={(e) => set('meal_plan', e.target.value)}>
-            {(lists?.meal_plans ?? ['RO', 'BB', 'HB', 'FB', 'AI', 'UAI']).map((m) => <option key={m} value={m}>{mealLabel(m, lang)}</option>)}
+            {(lists?.meal_plans ?? ['RO', 'BB', 'HB', 'FB', 'AI', 'SAI', 'UAI']).map((m) => <option key={m} value={m}>{mealLabel(m, lang)}</option>)}
           </Select>
         </Field>
         <Field label={t('rateForm.dateFrom')}><Input type="date" value={f.date_from} onChange={(e) => set('date_from', e.target.value)} /></Field>
@@ -187,17 +174,11 @@ export function RateForm({
             {(lists?.currencies ?? ['EGP', 'USD', 'EUR', 'SAR']).map((c) => <option key={c} value={c}>{c}</option>)}
           </Select>
         </Field>
-        <Field label={t('rateForm.transfer')}>
-          <Select value={f.transfer_included} onChange={(e) => set('transfer_included', e.target.value)}>
-            {(lists?.transfer_opts ?? ['Included', 'Optional', 'Not Included']).map((to) => <option key={to} value={to}>{transferText(to as TransferOpt, lang)}</option>)}
-          </Select>
-        </Field>
         <Field label={t('rateForm.status')}>
           <Select value={f.status} onChange={(e) => set('status', e.target.value)}>
             {(['Draft', 'Ready', 'Archived'] as RateStatus[]).map((s) => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
           </Select>
         </Field>
-        <Field label={t('rateForm.childPolicy')} className="col-span-2"><Textarea value={f.child_policy} onChange={(e) => set('child_policy', e.target.value)} /></Field>
         <Field label={t('rateForm.bookingNotes')} className="col-span-2"><Textarea value={f.booking_notes} onChange={(e) => set('booking_notes', e.target.value)} /></Field>
           </div>
         )}

@@ -28,16 +28,6 @@ function resolve_hotel_id(array $row, array $user): ?int
     return insert_id();
 }
 
-function resolve_package_id(?string $name, ?int $groupId): ?int
-{
-    $name = v_str($name, 190);
-    if ($name === null) return null;
-    $row = fetch_one('SELECT id FROM packages WHERE package_name = ? LIMIT 1', [$name]);
-    if ($row) return (int)$row['id'];
-    q('INSERT INTO packages (package_name, hotel_group_id, status) VALUES (?,?,"Active")', [$name, $groupId]);
-    return insert_id();
-}
-
 function route_import(string $method, array $seg, array $body): void
 {
     $user = require_auth();
@@ -67,18 +57,15 @@ function route_import(string $method, array $seg, array $body): void
                 $hotelId = resolve_hotel_id($row, $user);
                 if (!$hotelId) throw new Exception('hotel_name أو hotel_id مطلوب');
 
-                $groupRow = fetch_one('SELECT hotel_group_id FROM hotels WHERE id = ?', [$hotelId]);
-                $packageId = resolve_package_id($row['package_name'] ?? null, $groupRow['hotel_group_id'] ?? null);
-
                 $in = $row;
                 $in['hotel_id'] = $hotelId;
-                $in['package_id'] = $packageId;
+                $in['package_id'] = null;
                 $in['status'] = $row['status'] ?? $defaultStatus;
                 $in['source_type'] = $importType;
 
                 $roomType = v_str($row['room_type'] ?? 'Double', 60) ?? 'Double';
                 if ($overwrite) {
-                    delete_duplicate_rate($hotelId, $packageId, v_date($row['date_from'] ?? null), v_date($row['date_to'] ?? null), $roomType, v_enum($row['meal_plan'] ?? 'BB', MEAL_PLANS, 'BB'));
+                    delete_duplicate_rate($hotelId, null, v_date($row['date_from'] ?? null), v_date($row['date_to'] ?? null), $roomType, v_enum($row['meal_plan'] ?? 'BB', MEAL_PLANS, 'BB'));
                 }
                 insert_rate($in, $user);
                 $success++;

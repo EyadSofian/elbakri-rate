@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
-import type { Hotel, HotelGroup, Lists, Package } from '@/types'
+import type { HoneymoonOffer, Hotel, HotelGroup, Lists, Package } from '@/types'
 
 export function useLists() {
   return useQuery({
@@ -20,4 +20,8 @@ export function useHotels(params?: Record<string, unknown>) {
 
 export function usePackages() {
   return useQuery({ queryKey: ['packages'], queryFn: () => api.get<Package[]>('/packages') })
+}
+
+export function useHoneymoonOffers(params?: Record<string, unknown>) {
+  return useQuery({ queryKey: ['honeymoon', params], queryFn: () => api.get<HoneymoonOffer[]>('/honeymoon', params) })
 }

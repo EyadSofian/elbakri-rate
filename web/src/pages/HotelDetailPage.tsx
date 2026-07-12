@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Baby, Pencil, Plus, CalendarPlus, MapPin, Package, Tag, Trash2, Building2, CalendarDays, Utensils, ImageDown } from 'lucide-react'
+import { ArrowRight, Baby, Bus, Pencil, Plus, CalendarPlus, MapPin, Package, Tag, Trash2, Building2, CalendarDays, Utensils, ImageDown, CheckCircle2 } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
 import { PageLoader, ErrorState, Tabs, EmptyState } from '@/components/ui/misc'
 import { SectionTitle } from '@/components/ui/card'
@@ -15,16 +15,19 @@ import { PeriodsEditor, newPeriod, periodsToApi, countRecords, type Period } fro
 import { useLists } from '@/lib/hooks'
 import { useToast } from '@/components/ui/toast'
 import { useI18n } from '@/lib/i18n'
+import { useAuth } from '@/context/AuthContext'
 import { formatPrice, formatDateRange } from '@/lib/utils'
-import { mealLabel, roomLabel, transferText } from '@/lib/labels'
+import { mealLabel, roomLabel } from '@/lib/labels'
 import { groupRates } from '@/lib/grouping'
 import type { Hotel, Rate } from '@/types'
 
 export default function HotelDetailPage() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
   const { t, lang } = useI18n()
+  const { canEdit, canExport } = useAuth()
   const { data: lists } = useLists()
   const { data: hotel, isLoading, error } = useQuery({ queryKey: ['hotel', id], queryFn: () => api.get<Hotel>(`/hotels/${id}`) })
 
@@ -33,6 +36,7 @@ export default function HotelDetailPage() {
   const [addRate, setAddRate] = useState(false)
   const [editRate, setEditRate] = useState<Rate | null>(null)
   const [delRate, setDelRate] = useState<Rate | null>(null)
+  const [delHotel, setDelHotel] = useState(false)
   const [periodsOpen, setPeriodsOpen] = useState(false)
   const [periods, setPeriods] = useState<Period[]>([newPeriod()])
 
@@ -53,9 +57,30 @@ export default function HotelDetailPage() {
     onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.delete')),
   })
 
+  const markReady = useMutation({
+    mutationFn: (ids: number[]) => api.post<{ updated: number }>('/rates/bulk-status', { ids, status: 'Ready' }),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['hotel', id] })
+      qc.invalidateQueries({ queryKey: ['hotels'] })
+      toast.success(t('bulk.periodReadyDone', { n: res.updated }))
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.update')),
+  })
+
+  const removeHotel = useMutation({
+    mutationFn: () => api.del(`/hotels/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['hotels'] })
+      toast.success(t('hotel.deleted'))
+      navigate('/hotels')
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : t('err.delete')),
+  })
+
   const independent = hotel?.independent_rates ?? []
   const pkgRates = hotel?.package_rates ?? []
   const allRates = useMemo(() => [...independent, ...pkgRates], [independent, pkgRates])
+  const readyRates = useMemo(() => allRates.filter((r) => r.status === 'Ready'), [allRates])
   const list = tab === 'independent' ? independent : pkgRates
   const grouped = useMemo(() => groupRates(list), [list])
 
@@ -66,6 +91,7 @@ export default function HotelDetailPage() {
     [hotel.id]: {
       description: hotel.description,
       childPolicyDefault: hotel.child_policy_default,
+      transferNotesDefault: hotel.transfer_notes_default,
       facilities: hotel.facilities,
     },
   }
@@ -94,16 +120,28 @@ export default function HotelDetailPage() {
                 {hotel.child_policy_default}
               </p>
             )}
+            {hotel.transfer_notes_default && (
+              <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-ink">
+                <Bus className="h-4 w-4 text-navy-500" />
+                {hotel.transfer_notes_default}
+              </p>
+            )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setEditHotel(true)}><Pencil className="h-4 w-4" />{t('common.edit')}</Button>
-            <Button variant="outline" size="sm" onClick={() => setPeriodsOpen(true)}><CalendarPlus className="h-4 w-4" />{t('hotel.periods')}</Button>
-            <Button size="sm" onClick={() => setAddRate(true)}><Plus className="h-4 w-4" />{t('hotel.addRate')}</Button>
+            {canEdit && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setEditHotel(true)}><Pencil className="h-4 w-4" />{t('common.edit')}</Button>
+                <Button variant="outline" size="sm" onClick={() => setPeriodsOpen(true)}><CalendarPlus className="h-4 w-4" />{t('hotel.periods')}</Button>
+                <Button size="sm" onClick={() => setAddRate(true)}><Plus className="h-4 w-4" />{t('hotel.addRate')}</Button>
+                <Button variant="danger" size="sm" onClick={() => setDelHotel(true)}><Trash2 className="h-4 w-4" />{t('common.delete')}</Button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Export all of this hotel's rates (grouped) */}
+      {/* Export this hotel's ready rates (grouped) */}
+      {canExport && (
       <div className="card mb-5 flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <h2 className="flex items-center gap-2 text-base font-extrabold text-navy-900">
@@ -114,12 +152,13 @@ export default function HotelDetailPage() {
         <ExportActions
           size="sm"
           mode="hotel"
-          items={allRates}
+          items={readyRates}
           subtitle={[hotel.region, hotel.sub_region].filter(Boolean).join(' · ') || null}
           hotelInfo={hotelInfo}
           fileBase={`elbakri-${hotel.hotel_name}`}
         />
       </div>
+      )}
 
       <Tabs
         active={tab}
@@ -145,22 +184,32 @@ export default function HotelDetailPage() {
           </div>
         )
       ) : list.length === 0 ? (
-        <EmptyState icon={<Tag className="h-7 w-7" />} title={t('hotel.noRates')} description={t('hotel.noRatesDesc')} action={<Button onClick={() => setAddRate(true)}><Plus className="h-4 w-4" />{t('hotel.addRate')}</Button>} />
+        <EmptyState icon={<Tag className="h-7 w-7" />} title={t('hotel.noRates')} description={t('hotel.noRatesDesc')} action={canEdit ? <Button onClick={() => setAddRate(true)}><Plus className="h-4 w-4" />{t('hotel.addRate')}</Button> : undefined} />
       ) : (
         <div className="space-y-3">
           {grouped.map((h) =>
             h.periods.map((p) => (
               <div key={p.key} className="overflow-hidden rounded-card border border-navy-100 bg-white">
                 <div className="flex flex-wrap items-center justify-between gap-2 bg-navy-50 px-3 py-2">
-                  <span className="nums inline-flex items-center gap-1.5 text-sm font-bold text-navy-900">
-                    <CalendarDays className="h-4 w-4 text-navy-500" />{formatDateRange(p.from, p.to, t('export.allPeriods'))}
-                  </span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="nums inline-flex items-center gap-1.5 text-sm font-bold text-navy-900">
+                      <CalendarDays className="h-4 w-4 text-navy-500" />{formatDateRange(p.from, p.to, t('export.allPeriods'))}
+                    </span>
                     <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-700">
                       <Utensils className="h-4 w-4 text-navy-500" />{mealLabel(p.meal, lang)}
                     </span>
                     {p.rates[0] && <Badge tone={p.rates[0].status === 'Ready' ? 'green' : p.rates[0].status === 'Draft' ? 'amber' : 'slate'}>{t(`status.${p.rates[0].status}`)}</Badge>}
                   </div>
+                  {canEdit && p.rates.some((r) => r.status !== 'Ready') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => markReady.mutate(p.rates.filter((r) => r.status !== 'Ready').map((r) => r.id))}
+                      loading={markReady.isPending}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />{t('bulk.markPeriodReady')}
+                    </Button>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2 lg:grid-cols-3">
                   {p.rates.map((r) => (
@@ -169,34 +218,34 @@ export default function HotelDetailPage() {
                         <div className="text-xs font-bold text-navy-600">{roomLabel(r.room_type, lang)}</div>
                         <div className="nums text-base font-extrabold text-navy-900">{formatPrice(r.adult_price, r.currency)}</div>
                       </div>
-                      <div className="flex shrink-0 items-center gap-1">
-                        <button onClick={() => setEditRate(r)} className="grid h-8 w-8 place-items-center rounded-btn text-navy-500 hover:bg-navy-100" aria-label={t('common.edit')}>
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button onClick={() => setDelRate(r)} className="grid h-8 w-8 place-items-center rounded-btn text-red-500 hover:bg-red-50" aria-label={t('common.delete')}>
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                      {canEdit && (
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button onClick={() => setEditRate(r)} className="grid h-8 w-8 place-items-center rounded-btn text-navy-500 hover:bg-navy-100" aria-label={t('common.edit')}>
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => setDelRate(r)} className="grid h-8 w-8 place-items-center rounded-btn text-red-500 hover:bg-red-50" aria-label={t('common.delete')}>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
-                {(p.transfer === 'Included' || p.childPolicy) && (
-                  <div className="flex flex-wrap items-start gap-x-4 gap-y-1 border-t border-navy-50 px-3 py-2 text-xs text-ink-muted">
-                    {p.transfer === 'Included' && <span className="inline-flex items-center gap-1 text-green-600">{transferText('Included', lang)}</span>}
-                    {p.childPolicy && <span className="inline-flex items-start gap-1"><Baby className="mt-0.5 h-3.5 w-3.5 shrink-0 text-navy-500" />{p.childPolicy}</span>}
-                  </div>
-                )}
               </div>
             )),
           )}
         </div>
       )}
 
-      <HotelForm open={editHotel} onClose={() => setEditHotel(false)} hotel={hotel} />
-      <RateForm open={addRate} onClose={() => setAddRate(false)} fixedHotelId={hotel.id} />
-      {editRate && <RateForm open onClose={() => setEditRate(null)} rate={editRate} />}
+      {canEdit && (
+        <>
+          <HotelForm open={editHotel} onClose={() => setEditHotel(false)} hotel={hotel} />
+          <RateForm open={addRate} onClose={() => setAddRate(false)} fixedHotelId={hotel.id} />
+          {editRate && <RateForm open onClose={() => setEditRate(null)} rate={editRate} />}
+        </>
+      )}
 
-      <Modal
+      {canEdit && <Modal
         open={periodsOpen}
         onClose={() => setPeriodsOpen(false)}
         size="xl"
@@ -210,7 +259,7 @@ export default function HotelDetailPage() {
       >
         <SectionTitle>{t('hotel.periodsSection')}</SectionTitle>
         <PeriodsEditor value={periods} onChange={setPeriods} lists={lists} />
-      </Modal>
+      </Modal>}
 
       <ConfirmDialog
         open={!!delRate}
@@ -220,6 +269,15 @@ export default function HotelDetailPage() {
         confirmText={t('common.delete')}
         loading={removeRate.isPending}
         message={t('hotel.deleteRateQ')}
+      />
+      <ConfirmDialog
+        open={delHotel}
+        onClose={() => setDelHotel(false)}
+        onConfirm={() => removeHotel.mutate()}
+        danger
+        confirmText={t('common.delete')}
+        loading={removeHotel.isPending}
+        message={t('hotel.deleteQ', { name: hotel.hotel_name })}
       />
     </div>
   )

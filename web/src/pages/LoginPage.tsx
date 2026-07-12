@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { LogIn } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
-import { homeForRole } from '@/lib/nav'
+import { homeForUser } from '@/lib/nav'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/inputs'
 import { Logo } from '@/components/layout/Logo'
@@ -41,7 +41,7 @@ export default function LoginPage() {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<Form>({ resolver: zodResolver(schema) })
 
   useEffect(() => {
-    if (user) navigate(homeForRole(user.role), { replace: true })
+    if (user) navigate(homeForUser(user), { replace: true })
   }, [user, navigate])
 
   const onSubmit = async (data: Form) => {
@@ -56,7 +56,7 @@ export default function LoginPage() {
     }
   }
 
-  const features = [t('nav.hotels'), t('nav.packages'), t('nav.matrix'), 'PNG / PDF', 'WhatsApp']
+  const features = [t('nav.hotels'), t('nav.packages'), t('nav.sales'), 'PNG / PDF', 'WhatsApp']
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2" dir={dir}>

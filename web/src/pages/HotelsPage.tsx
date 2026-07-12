@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Plus, Search, SlidersHorizontal, Building2, Upload, Grid3x3, MapPin, ImageDown } from 'lucide-react'
+import { Plus, Search, SlidersHorizontal, Building2, Upload, MapPin, ImageDown } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useHotels, useHotelGroups } from '@/lib/hooks'
 import { PageHeader, EmptyState, PageLoader, ErrorState } from '@/components/ui/misc'
@@ -11,6 +11,7 @@ import { Badge, Stars } from '@/components/ui/badge'
 import { HotelForm } from '@/components/HotelForm'
 import { ImportModal } from '@/components/ImportModal'
 import { ExportActions } from '@/components/export/ExportActions'
+import { useAuth } from '@/context/AuthContext'
 import { useI18n } from '@/lib/i18n'
 import { REGIONS } from '@/lib/labels'
 import { cn } from '@/lib/utils'
@@ -18,6 +19,7 @@ import type { Hotel } from '@/types'
 
 export default function HotelsPage() {
   const { t } = useI18n()
+  const { canEdit } = useAuth()
   const [showFilters, setShowFilters] = useState(false)
   const [q, setQ] = useState('')
   const [region, setRegion] = useState('')
@@ -45,11 +47,12 @@ export default function HotelsPage() {
         title={t('nav.hotels')}
         subtitle={t('hotels.subtitle')}
         actions={
-          <>
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" />{t('common.import')}</Button>
-            <Link to="/rates/matrix/new"><Button variant="outline" size="sm"><Grid3x3 className="h-4 w-4" />{t('hotels.matrix')}</Button></Link>
-            <Button size="sm" onClick={() => setAddOpen(true)}><Plus className="h-4 w-4" />{t('hotels.add')}</Button>
-          </>
+          canEdit ? (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" />{t('common.import')}</Button>
+              <Button size="sm" onClick={() => setAddOpen(true)}><Plus className="h-4 w-4" />{t('hotels.add')}</Button>
+            </>
+          ) : null
         }
       />
 
@@ -91,7 +94,7 @@ export default function HotelsPage() {
           icon={<Building2 className="h-7 w-7" />}
           title={t('hotels.emptyTitle')}
           description={t('hotels.emptyDesc')}
-          action={<Button onClick={() => setAddOpen(true)}><Plus className="h-4 w-4" />{t('hotels.add')}</Button>}
+          action={canEdit ? <Button onClick={() => setAddOpen(true)}><Plus className="h-4 w-4" />{t('hotels.add')}</Button> : undefined}
         />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -99,14 +102,19 @@ export default function HotelsPage() {
         </div>
       )}
 
-      <HotelForm open={addOpen} onClose={() => setAddOpen(false)} />
-      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
+      {canEdit && (
+        <>
+          <HotelForm open={addOpen} onClose={() => setAddOpen(false)} />
+          <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
+        </>
+      )}
     </div>
   )
 }
 
 function HotelCard({ hotel }: { hotel: Hotel }) {
   const { t } = useI18n()
+  const { canExport } = useAuth()
   return (
     <div className="card flex flex-col gap-2 p-4">
       <Link to={`/hotels/${hotel.id}`} className="group flex flex-col gap-2">
@@ -123,12 +131,19 @@ function HotelCard({ hotel }: { hotel: Hotel }) {
         {hotel.group_name && <Badge tone="navy">{hotel.group_name}</Badge>}
         <div className="mt-1 flex items-center justify-between border-t border-navy-100 pt-2 text-xs">
           <span className="text-ink-muted">{t('hotels.ratesLabel')}: <span className="nums font-bold text-navy-800">{hotel.rates_count ?? 0}</span></span>
-          <span className={cn('rounded-full px-2 py-0.5 font-semibold', (hotel.ready_count ?? 0) > 0 ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500')}>
-            {t('hotels.readyLabel')}: <span className="nums">{hotel.ready_count ?? 0}</span>
-          </span>
+          <div className="flex items-center gap-1">
+            <span className={cn('rounded-full px-2 py-0.5 font-semibold', (hotel.ready_count ?? 0) > 0 ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-500')}>
+              {t('hotels.readyLabel')}: <span className="nums">{hotel.ready_count ?? 0}</span>
+            </span>
+            {(hotel.draft_count ?? 0) > 0 && (
+              <span className="rounded-full bg-amber-50 px-2 py-0.5 font-semibold text-amber-700">
+                {t('dash.draft')}: <span className="nums">{hotel.draft_count}</span>
+              </span>
+            )}
+          </div>
         </div>
       </Link>
-      {(hotel.rates_count ?? 0) > 0 && (
+      {canExport && (hotel.ready_count ?? 0) > 0 && (
         <div className="border-t border-navy-50 pt-2">
           <HotelQuickExport hotelId={hotel.id} hotelName={hotel.hotel_name} region={hotel.region} subRegion={hotel.sub_region} />
         </div>
@@ -146,7 +161,7 @@ function HotelQuickExport({ hotelId, hotelName, region, subRegion }: { hotelId: 
     queryFn: () => api.get<Hotel>(`/hotels/${hotelId}`),
     enabled,
   })
-  const items = useMemo(() => [...(data?.independent_rates ?? []), ...(data?.package_rates ?? [])], [data])
+  const items = useMemo(() => [...(data?.independent_rates ?? []), ...(data?.package_rates ?? [])].filter((rate) => rate.status === 'Ready'), [data])
 
   if (!enabled) {
     return (
@@ -164,7 +179,7 @@ function HotelQuickExport({ hotelId, hotelName, region, subRegion }: { hotelId: 
       mode="hotel"
       items={items}
       subtitle={[region, subRegion].filter(Boolean).join(' · ') || null}
-      hotelInfo={{ [hotelId]: { description: data.description, childPolicyDefault: data.child_policy_default, facilities: data.facilities } }}
+      hotelInfo={{ [hotelId]: { description: data.description, childPolicyDefault: data.child_policy_default, transferNotesDefault: data.transfer_notes_default, facilities: data.facilities } }}
       fileBase={`elbakri-${hotelName}`}
     />
   )

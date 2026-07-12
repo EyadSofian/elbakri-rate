@@ -47,7 +47,7 @@ const AR: Record<string, string> = {
   'nav.hotels': 'الفنادق',
   'nav.groups': 'مجموعات الفنادق',
   'nav.packages': 'الباقات',
-  'nav.matrix': 'مصفوفة الأسعار',
+  'nav.honeymoon': 'الهاني مون',
   'nav.sales': 'عروض المبيعات',
   'nav.quotes': 'عروض الأسعار',
   'nav.users': 'المستخدمون',
@@ -112,6 +112,7 @@ const AR: Record<string, string> = {
   'export.waDone': 'تم نسخ رسالة واتساب',
   'export.waFail': 'تعذّر إنشاء الرسالة',
   'export.noItems': 'لا توجد عناصر للتصدير',
+  'export.pngDoneMulti': 'تم تصدير {n} صور PNG مرقمة',
   'export.heading': 'عرض سعر',
   'export.presentedTo': 'مقدم إلى',
   'export.perPerson': 'للفرد',
@@ -123,6 +124,25 @@ const AR: Record<string, string> = {
   'export.term1': 'الأسعار قابلة للتغيير حسب التوافر.',
   'export.term2': 'برجاء التأكيد قبل الحجز.',
   'export.issued': 'صدر بتاريخ',
+  'export.page': 'صفحة',
+  'export.meal': 'الوجبة',
+  'export.reference': 'رقم العرض',
+  'export.pricingBasis': 'نوع التسعير',
+  'export.hotelsCount': 'عدد الفنادق: {n}',
+  'export.allPricesIn': 'جميع الأسعار ب{cur}',
+  'export.basisPerPerson': 'الأسعار للفرد',
+  'export.basisPerRoom': 'الأسعار للغرفة',
+  'honeymoon.badge': 'عرض هاني مون',
+  'honeymoon.priceType': 'نوع السعر',
+  'honeymoon.price': 'السعر',
+  'honeymoon.notes': 'ملاحظات',
+  'honeymoon.features': 'المميزات والتفاصيل',
+  'honeymoon.nights': 'ليالٍ',
+  'honeymoon.days': 'أيام',
+  'currency.EGP': 'الجنيه المصري',
+  'currency.USD': 'الدولار الأمريكي',
+  'currency.EUR': 'اليورو',
+  'currency.SAR': 'الريال السعودي',
 
   // Package export panel
   'pkg.exportTitle': 'تصدير الباقة للعميل',
@@ -136,6 +156,7 @@ const AR: Record<string, string> = {
   'meal.HB': 'نصف إقامة',
   'meal.FB': 'إقامة كاملة',
   'meal.AI': 'شامل',
+  'meal.SAI': 'سوفت أول إنكلوسف',
   'meal.UAI': 'شامل فاخر',
 
   // Enum: room types
@@ -205,6 +226,10 @@ const AR: Record<string, string> = {
   'err.export': 'تعذّر التصدير',
   'err.notFound': 'غير موجود',
 
+  // Bulk actions
+  'bulk.markPeriodReady': 'اجعل الفترة جاهزة',
+  'bulk.periodReadyDone': 'تم تجهيز {n} سعر في الفترة',
+
   // Confirm dialog
   'confirm.title': 'تأكيد',
 
@@ -223,7 +248,6 @@ const AR: Record<string, string> = {
   'hotels.subtitle': 'إدارة الفنادق المستقلة وأسعارها',
   'hotels.add': 'إضافة فندق',
   'hotels.searchPlaceholder': 'ابحث عن فندق...',
-  'hotels.matrix': 'مصفوفة أسعار',
   'hotels.emptyTitle': 'لا توجد فنادق',
   'hotels.emptyDesc': 'ابدأ بإضافة أول فندق ومعه فترات الأسعار',
   'hotels.ratesLabel': 'الأسعار',
@@ -248,6 +272,8 @@ const AR: Record<string, string> = {
   'hotel.exportHint': 'يصدّر كل أسعار الفندق مجمّعة حسب الفترة ونوع الغرفة.',
   'hotel.ratesAdded': 'تمت إضافة {n} سعر',
   'hotel.rateDeleted': 'تم حذف السعر',
+  'hotel.deleteQ': 'هل تريد حذف الفندق {name}؟',
+  'hotel.deleted': 'تم حذف الفندق',
 
   // Quotes list
   'quotes.subtitle': 'عروض الأسعار المحفوظة والمرسلة',
@@ -287,11 +313,13 @@ const AR: Record<string, string> = {
 
   // Package detail
   'package.salesView': 'عرض المبيعات',
-  'package.addRates': 'إضافة أسعار',
+  'package.manageHotels': 'إدارة فنادق الباقة',
   'package.noHotels': 'لا توجد فنادق مرتبطة — عدّل الباقة لإضافتها',
+  'package.noHotelsTitle': 'أضف فنادق للباقة',
   'package.ratesByHotel': 'الأسعار حسب الفندق',
-  'package.noRatesInPackage': 'لا توجد أسعار في الباقة',
-  'package.noRatesDesc': 'استخدم مصفوفة الأسعار لإضافة أسعار دفعة واحدة',
+  'package.ratesCount': 'سعر',
+  'package.noRatesInPackage': 'لا توجد أسعار لفنادق هذه الباقة',
+  'package.noRatesDesc': 'أضف الأسعار من صفحة الفندق، ثم ستظهر هنا تلقائيًا حسب الفنادق المرتبطة بالباقة.',
   'package.copyToHotels': 'نسخ لفنادق',
   'package.archive': 'أرشفة',
   'package.markReady': 'جاهز',
@@ -302,7 +330,8 @@ const AR: Record<string, string> = {
   'package.selectHotelErr': 'اختر فندقًا',
   'package.statusUpdated': 'تم تحديث {n} سعر',
   'package.copied': 'تم نسخ {n} سعر',
-  'package.addRatesTitle': 'إضافة أسعار للباقة',
+  'package.deleteQ': 'هل تريد حذف الباقة {name}؟',
+  'package.deleted': 'تم حذف الباقة',
 
   // Package form
   'pkgForm.editTitle': 'تعديل باقة',
@@ -313,14 +342,12 @@ const AR: Record<string, string> = {
   'pkgForm.region': 'المنطقة',
   'pkgForm.multi': 'متعدد',
   'pkgForm.group': 'المجموعة',
-  'pkgForm.defaultMeal': 'الإقامة الافتراضية',
-  'pkgForm.defaultPricing': 'أساس التسعير الافتراضي',
   'pkgForm.description': 'الوصف',
   'pkgForm.hotels': 'الفنادق المشمولة',
   'pkgForm.searchHotels': 'بحث...',
   'pkgForm.noHotels': 'لا توجد فنادق',
   'pkgForm.nameRequired': 'اسم الباقة مطلوب',
-  'pkgForm.containerNote': 'الباقة عبارة عن حاوية للفنادق فقط. تُضاف الأسعار والتواريخ لكل فندق من صفحة «إضافة أسعار».',
+  'pkgForm.containerNote': 'الباقة عبارة عن حاوية للفنادق فقط. أضف أو احذف الفنادق هنا، أما الأسعار والفترات فتُدار من صفحة الفندق.',
 
   // Rate form
   'rateForm.editTitle': 'تعديل سعر',
@@ -396,20 +423,6 @@ const AR: Record<string, string> = {
   'hotelForm.updatedN': 'تم تحديث الفندق وإضافة {n} سعر',
   'hotelForm.addedN': 'تم إضافة الفندق وإضافة {n} سعر',
 
-  // Matrix builder
-  'matrix.package': 'الباقة (اختياري)',
-  'matrix.noPackage': '— بدون باقة (أسعار مستقلة) —',
-  'matrix.packageHint': 'عند اختيار باقة، تُعرض فنادقها فقط. بدون باقة تظهر كل الفنادق لأسعار مستقلة.',
-  'matrix.hotels': 'الفنادق',
-  'matrix.noHotels': 'لا توجد فنادق متاحة',
-  'matrix.periodsRooms': 'الفترات وأنواع الغرف',
-  'matrix.overwrite': 'استبدال المكرر',
-  'matrix.expected': 'المتوقع',
-  'matrix.save': 'حفظ الأسعار',
-  'matrix.created': 'تم إنشاء {n} سعر بنجاح',
-  'matrix.selectHotel': 'اختر فندقًا واحدًا على الأقل',
-  'matrix.atLeastOne': 'أدخل سعرًا واحدًا على الأقل',
-
   // Dashboard
   'dash.title': 'لوحة التحكم',
   'dash.subtitle': 'نظرة عامة على الأسعار والفنادق والباقات',
@@ -427,9 +440,6 @@ const AR: Record<string, string> = {
   'dash.emptyDesc': 'أضف سعرًا أو فندقًا للبدء',
   'dash.exportCsv': 'تصدير CSV',
 
-  // Rate matrix page
-  'matrixPage.subtitle': 'أضف أسعارًا متعددة دفعة واحدة: فنادق × فترات × أنواع غرف',
-
   // Hotel groups
   'groups.subtitle': 'السلاسل والمجموعات الفندقية',
   'groups.add': 'إضافة مجموعة',
@@ -443,6 +453,8 @@ const AR: Record<string, string> = {
   'groups.region': 'المنطقة',
   'groups.notes': 'ملاحظات',
   'groups.nameRequired': 'الاسم مطلوب',
+  'groups.deleteQ': 'هل تريد حذف مجموعة الفنادق {name}؟',
+  'groups.deleted': 'تم حذف مجموعة الفنادق',
 
   // Settings
   'settings.subtitle': 'معلومات الحساب والنظام',
@@ -477,9 +489,26 @@ const AR: Record<string, string> = {
   'users.password': 'كلمة المرور',
   'users.passwordHint': '6 أحرف على الأقل',
   'users.active': 'الحساب نشط',
-  'users.scopeNote': 'يتم تطبيق صلاحيات النطاق الافتراضية تلقائيًا حسب الدور (مبيعات/قارئ يرون الأسعار الجاهزة فقط).',
+  'users.tabs': 'تاب',
+  'users.visibleTabs': 'التابات المسموحة',
+  'users.accessRules': 'قواعد الوصول',
+  'users.addRule': 'إضافة قاعدة',
+  'users.ruleN': 'قاعدة {n}',
+  'users.tabsRequired': 'اختر تاب واحد على الأقل',
+  'users.allScopeHint': 'وصول لكل البيانات حسب صلاحيات العرض والتعديل والتصدير المختارة',
+  'users.scopeNote': 'اختيار التابات يحدد ما يظهر في القائمة الجانبية، وقواعد الوصول تحدد النطاقات المسموح عرضها أو تعديلها أو تصديرها.',
   'users.nameRequired': 'الاسم مطلوب',
   'users.credsRequired': 'البريد وكلمة مرور (6+) مطلوبة',
+
+  // Scopes / permissions
+  'scope.all': 'الكل',
+  'scope.region': 'منطقة',
+  'scope.hotel_group': 'مجموعة فنادق',
+  'scope.hotel': 'فندق',
+  'scope.package': 'باقة',
+  'perm.view': 'عرض',
+  'perm.edit': 'تعديل',
+  'perm.export': 'تصدير',
 
   // System check
   'system.subtitle': 'حالة الاتصال وقاعدة البيانات والمكتبات',
@@ -538,7 +567,7 @@ const EN: Record<string, string> = {
   'nav.hotels': 'Hotels',
   'nav.groups': 'Hotel Groups',
   'nav.packages': 'Packages',
-  'nav.matrix': 'Rate Matrix',
+  'nav.honeymoon': 'Honeymoon',
   'nav.sales': 'Sales Offers',
   'nav.quotes': 'Quotes',
   'nav.users': 'Users',
@@ -598,6 +627,7 @@ const EN: Record<string, string> = {
   'export.waDone': 'WhatsApp message copied',
   'export.waFail': 'Could not build the message',
   'export.noItems': 'No items to export',
+  'export.pngDoneMulti': '{n} PNG images exported',
   'export.heading': 'Price Offer',
   'export.presentedTo': 'Presented to',
   'export.perPerson': 'per person',
@@ -609,6 +639,25 @@ const EN: Record<string, string> = {
   'export.term1': 'Prices are subject to availability.',
   'export.term2': 'Please confirm before booking.',
   'export.issued': 'Issued',
+  'export.page': 'Page',
+  'export.meal': 'Meal',
+  'export.reference': 'Offer no.',
+  'export.pricingBasis': 'Pricing basis',
+  'export.hotelsCount': '{n} hotels',
+  'export.allPricesIn': 'All prices in {cur}',
+  'export.basisPerPerson': 'Prices are per person',
+  'export.basisPerRoom': 'Prices are per room',
+  'honeymoon.badge': 'Honeymoon Offer',
+  'honeymoon.priceType': 'Price type',
+  'honeymoon.price': 'Price',
+  'honeymoon.notes': 'Notes',
+  'honeymoon.features': 'Features & Details',
+  'honeymoon.nights': 'nights',
+  'honeymoon.days': 'days',
+  'currency.EGP': 'EGP',
+  'currency.USD': 'USD',
+  'currency.EUR': 'EUR',
+  'currency.SAR': 'SAR',
 
   'pkg.exportTitle': 'Export package for client',
   'pkg.exportHint': 'With no selection only ready rates are exported. Selecting rates below exports just those.',
@@ -620,6 +669,7 @@ const EN: Record<string, string> = {
   'meal.HB': 'Half Board',
   'meal.FB': 'Full Board',
   'meal.AI': 'All Inclusive',
+  'meal.SAI': 'Soft All Inclusive',
   'meal.UAI': 'Ultra All Inclusive',
 
   'room.Single': 'Single',
@@ -682,6 +732,10 @@ const EN: Record<string, string> = {
   'err.export': 'Export failed',
   'err.notFound': 'Not found',
 
+  // Bulk actions
+  'bulk.markPeriodReady': 'Mark period ready',
+  'bulk.periodReadyDone': '{n} rate(s) marked ready',
+
   // Confirm dialog
   'confirm.title': 'Confirm',
 
@@ -700,7 +754,6 @@ const EN: Record<string, string> = {
   'hotels.subtitle': 'Manage standalone hotels and their rates',
   'hotels.add': 'Add hotel',
   'hotels.searchPlaceholder': 'Search for a hotel…',
-  'hotels.matrix': 'Rate matrix',
   'hotels.emptyTitle': 'No hotels',
   'hotels.emptyDesc': 'Start by adding your first hotel together with its rate periods',
   'hotels.ratesLabel': 'Rates',
@@ -725,6 +778,8 @@ const EN: Record<string, string> = {
   'hotel.exportHint': 'Exports all of the hotel’s rates grouped by period and room type.',
   'hotel.ratesAdded': '{n} rates added',
   'hotel.rateDeleted': 'Rate deleted',
+  'hotel.deleteQ': 'Delete hotel {name}?',
+  'hotel.deleted': 'Hotel deleted',
 
   // Quotes list
   'quotes.subtitle': 'Saved and sent quotes',
@@ -764,11 +819,13 @@ const EN: Record<string, string> = {
 
   // Package detail
   'package.salesView': 'Sales view',
-  'package.addRates': 'Add rates',
+  'package.manageHotels': 'Manage package hotels',
   'package.noHotels': 'No linked hotels — edit the package to add them',
+  'package.noHotelsTitle': 'Add hotels to the package',
   'package.ratesByHotel': 'Rates by hotel',
-  'package.noRatesInPackage': 'No rates in this package',
-  'package.noRatesDesc': 'Use the rate matrix to add rates in bulk',
+  'package.ratesCount': 'rate(s)',
+  'package.noRatesInPackage': 'No rates for this package hotels',
+  'package.noRatesDesc': 'Add rates from the hotel page. They will appear here automatically based on the hotels linked to the package.',
   'package.copyToHotels': 'Copy to hotels',
   'package.archive': 'Archive',
   'package.markReady': 'Ready',
@@ -779,7 +836,8 @@ const EN: Record<string, string> = {
   'package.selectHotelErr': 'Select a hotel',
   'package.statusUpdated': '{n} rate(s) updated',
   'package.copied': '{n} rate(s) copied',
-  'package.addRatesTitle': 'Add rates to the package',
+  'package.deleteQ': 'Delete package {name}?',
+  'package.deleted': 'Package deleted',
 
   // Package form
   'pkgForm.editTitle': 'Edit package',
@@ -790,14 +848,12 @@ const EN: Record<string, string> = {
   'pkgForm.region': 'Region',
   'pkgForm.multi': 'Multiple',
   'pkgForm.group': 'Group',
-  'pkgForm.defaultMeal': 'Default meal plan',
-  'pkgForm.defaultPricing': 'Default pricing basis',
   'pkgForm.description': 'Description',
   'pkgForm.hotels': 'Included hotels',
   'pkgForm.searchHotels': 'Search…',
   'pkgForm.noHotels': 'No hotels',
   'pkgForm.nameRequired': 'Package name is required',
-  'pkgForm.containerNote': 'A package is only a container of hotels. Prices and dates are added per hotel from the “Add rates” page.',
+  'pkgForm.containerNote': 'A package is only a container of hotels. Add or remove hotels here; prices and periods are managed from the hotel page.',
 
   // Rate form
   'rateForm.editTitle': 'Edit rate',
@@ -873,20 +929,6 @@ const EN: Record<string, string> = {
   'hotelForm.updatedN': 'Hotel updated and {n} rates added',
   'hotelForm.addedN': 'Hotel added and {n} rates added',
 
-  // Matrix builder
-  'matrix.package': 'Package (optional)',
-  'matrix.noPackage': '— No package (standalone rates) —',
-  'matrix.packageHint': 'Choosing a package shows only its hotels. With no package, all hotels appear for standalone rates.',
-  'matrix.hotels': 'Hotels',
-  'matrix.noHotels': 'No hotels available',
-  'matrix.periodsRooms': 'Periods & room types',
-  'matrix.overwrite': 'Overwrite duplicates',
-  'matrix.expected': 'Expected',
-  'matrix.save': 'Save rates',
-  'matrix.created': '{n} rates created successfully',
-  'matrix.selectHotel': 'Select at least one hotel',
-  'matrix.atLeastOne': 'Enter at least one price',
-
   // Dashboard
   'dash.title': 'Dashboard',
   'dash.subtitle': 'Overview of rates, hotels and packages',
@@ -904,9 +946,6 @@ const EN: Record<string, string> = {
   'dash.emptyDesc': 'Add a rate or a hotel to get started',
   'dash.exportCsv': 'Export CSV',
 
-  // Rate matrix page
-  'matrixPage.subtitle': 'Add many rates at once: hotels × periods × room types',
-
   // Hotel groups
   'groups.subtitle': 'Hotel chains and groups',
   'groups.add': 'Add group',
@@ -920,6 +959,8 @@ const EN: Record<string, string> = {
   'groups.region': 'Region',
   'groups.notes': 'Notes',
   'groups.nameRequired': 'Name is required',
+  'groups.deleteQ': 'Delete hotel group {name}?',
+  'groups.deleted': 'Hotel group deleted',
 
   // Settings
   'settings.subtitle': 'Account and system information',
@@ -954,9 +995,26 @@ const EN: Record<string, string> = {
   'users.password': 'Password',
   'users.passwordHint': 'At least 6 characters',
   'users.active': 'Account active',
-  'users.scopeNote': 'Default scope permissions apply automatically by role (Sales/Viewer see ready rates only).',
+  'users.tabs': 'tab(s)',
+  'users.visibleTabs': 'Visible tabs',
+  'users.accessRules': 'Access rules',
+  'users.addRule': 'Add rule',
+  'users.ruleN': 'Rule {n}',
+  'users.tabsRequired': 'Select at least one tab',
+  'users.allScopeHint': 'Access to all data based on the selected view/edit/export permissions',
+  'users.scopeNote': 'Visible tabs control the sidebar pages. Access rules control which data scopes can be viewed, edited, or exported.',
   'users.nameRequired': 'Name is required',
   'users.credsRequired': 'Email and a password (6+) are required',
+
+  // Scopes / permissions
+  'scope.all': 'All',
+  'scope.region': 'Region',
+  'scope.hotel_group': 'Hotel group',
+  'scope.hotel': 'Hotel',
+  'scope.package': 'Package',
+  'perm.view': 'View',
+  'perm.edit': 'Edit',
+  'perm.export': 'Export',
 
   // System check
   'system.subtitle': 'Connection, database and library status',

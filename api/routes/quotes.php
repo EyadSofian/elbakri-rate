@@ -28,9 +28,10 @@ function quote_with_items(int $id): array
     $quote = fetch_one('SELECT * FROM quotes WHERE id = ?', [$id]);
     if (!$quote) fail('عرض السعر غير موجود.', 404, 'not_found');
     $quote['items'] = fetch_all(
-        'SELECT qi.id AS item_id, qi.custom_note, qi.sort_order, qi.hotel_rate_id, r.*
+        'SELECT qi.id AS item_id, qi.custom_note, qi.sort_order, qi.hotel_rate_id, r.*, ' . rate_hotel_info_select('h') . '
          FROM quote_items qi
          JOIN hotel_rates r ON r.id = qi.hotel_rate_id
+         LEFT JOIN hotels h ON h.id = r.hotel_id
          WHERE qi.quote_id = ?
          ORDER BY qi.sort_order, qi.id',
         [$id]
