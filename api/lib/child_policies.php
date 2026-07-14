@@ -270,7 +270,16 @@ function child_policy_legacy_public(?array $row): ?array
 {
     if (!$row) return null;
     if (($row['child_price'] ?? null) === null && ($row['child_age_from'] ?? null) === null && ($row['child_age_to'] ?? null) === null) {
-        return ['requires_manual_confirmation' => true, 'rules' => []];
+        return [
+            'legacy' => true,
+            'name' => 'Child price requires confirmation',
+            'min_adults' => 1,
+            // Keep the form usable even before Operations defines a structured
+            // policy. Checkout will collect ages then route to manual confirmation.
+            'max_children' => 4,
+            'rules' => [],
+            'requires_manual_confirmation' => true,
+        ];
     }
     return [
         'legacy' => true,
